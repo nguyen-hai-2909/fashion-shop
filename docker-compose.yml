@@ -1,0 +1,67 @@
+name: fashion
+#
+# Stack đầy đủ (Mongo + Spring + React/Nginx) — MỘT lệnh là đủ:
+#   docker compose up -d --build
+# Điều này đã --build cả backend VÀ frontend (và kéo image mongo). Không cần
+# lệnh riêng cho frontend. Chỉ khi sửa UI và muốn build nhanh 1 service:
+#   docker compose up -d --build frontend
+# UI: http://localhost:3000  |  API: http://localhost:8080 (fashion project)
+services:
+  # INFO logs like "Connection not authenticating" are normal when MongoDB runs
+  # without auth: clients (e.g. healthcheck via mongosh) connect without logging in.
+  # This is not an application error. Enable MONGO_INITDB_ROOT_* + credentials in
+  # MONGO_URI only if you want authentication and quieter access-control chatter.
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "mongodb://localhost:27017/test", "--eval", "db.runCommand({ ping: 1 }).ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  backend:
+    build:
+      context: ./furniture-spring-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      MONGO_URI: mongodb://mongo:27017/fashion_shop
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:-change-me-in-production}
+      URL_CLIENT: ${URL_CLIENT:-http://localhost:3000}
+      URL_CLIENT_RESET_PASS: ${URL_CLIENT_RESET_PASS:-http://localhost:3000/reset-password}
+      APP_UPLOAD_DIR: /data/photos
+      CLOUDINARY_URL: ${CLOUDINARY_URL:-cloudinary://187942586943911:Vp8vws1XqdQqxSEjYgT2SJ-X248@dxommhmg8}
+    volumes:
+      - backend_photos:/data/photos
+      - backend_imgs:/data/imgs
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+
+  frontend:
+    build:
+      context: ./furniture_store_2023-main
+      args:
+        VITE_BASE_URL: /api/v1/
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  mongo_data:
+  backend_photos:
+  backend_imgs:

@@ -1,0 +1,57 @@
+$transition: all 0.3s linear;
+$bgColorActive: #855f4a;
+$titleAccount: #453227;
+$brown: #6d4833;
+$black: #222;
+$colorBorder: #ab7a5f;
+.info-account-btn {
+  width: 85%;
+  display: flex;
+  &.btn-disabled {
+    button {
+      cursor: no-drop;
+    }
+  }
+  @media screen and (max-width: 991px) {
+    width: 100%;
+  }
+}
+.option-user {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  .pass-toggle {
+    &.is-active {
+      color: $colorBorder;
+    }
+  }
+  .address-toggle {
+    color: $titleAccount;
+    font-size: 14px;
+    // text-decoration: underline;
+    cursor: pointer;
+    margin-top: 3rem;
+    margin-bottom: 1.5rem;
+    &.is-active {
+      color: $colorBorder;
+    }
+  }
+}
+.start {
+  justify-content: flex-start;
+}
+.end {
+  justify-content: flex-end;
+}
+
+.err {
+  margin-left: 0.5rem;
+  margin-top: 0.2rem;
+  color: var(--clr-red-dark);
+}
+
+.empty-img-wrap {
+  height: 200px;
+  width: 100%;
+  object-fit: contain;
+}
