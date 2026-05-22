@@ -16,10 +16,14 @@ import { Flex } from "antd";
 
 const ProductCheckout = (props) => {
   const { products: cartProducts } = useContext(cartContext);
-  const { discountCode, value: valueDiscount } = useContext(discountContext);
+  const { discountCode: discountCodeCtx, value: valueDiscountCtx } = useContext(discountContext);
   //! Props
-  const { isLoading, products: productsProp } = props;
+  const { isLoading, products: productsProp, discountCode: discountCodeProp, valueDiscount: valueDiscountProp } = props;
   const products = productsProp ?? cartProducts;
+
+  // Prefer explicitly passed values (e.g. Buy Now suppresses cart discount)
+  const discountCode = discountCodeProp !== undefined ? discountCodeProp : discountCodeCtx;
+  const valueDiscount = valueDiscountProp !== undefined ? valueDiscountProp : valueDiscountCtx;
   //! State
 
   //! Function

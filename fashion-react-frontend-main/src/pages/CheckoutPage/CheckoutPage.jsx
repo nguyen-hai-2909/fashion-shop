@@ -28,10 +28,14 @@ const CheckoutPage = () => {
     return products;
   }, [buyNow, location.state?.products, products]);
   const {
-    discountCode,
-    value: valueDiscount,
+    discountCode: discountCodeCtx,
+    value: valueDiscountCtx,
     dispatch: dispatchDiscount,
   } = useContext(discountContext);
+
+  // Buy Now skips any discount previously applied to the cart
+  const discountCode = buyNow ? null : discountCodeCtx;
+  const valueDiscount = buyNow ? 0 : valueDiscountCtx;
   //! Props
 
   //! State
@@ -129,6 +133,8 @@ const CheckoutPage = () => {
                 <ProductCheckout
                   isLoading={mutateCheckout.isLoading}
                   products={checkoutProducts}
+                  discountCode={discountCode}
+                  valueDiscount={valueDiscount}
                 />
               </Form>
             );
