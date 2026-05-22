@@ -1,0 +1,56 @@
+.payment-section {
+  &__hint {
+    margin: 0 0 12px;
+    color: #666;
+    font-size: 14px;
+  }
+
+  &__label {
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  &__select-wrap {
+    max-width: 420px;
+  }
+
+  &__select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff;
+  }
+}
+
+.transfer-qr-box {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  border-radius: 10px;
+  display: none;
+
+  &--visible {
+    display: block;
+  }
+
+  p {
+    margin: 0 0 8px;
+    color: #1e3a8a;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  img {
+    width: 220px;
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid #dbeafe;
+    background: #fff;
+    display: block;
+  }
+}
