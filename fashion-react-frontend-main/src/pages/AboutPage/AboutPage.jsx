@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import imgAbout from "../../assets/images/img_about.jpeg";
+import imgAbout from "../../assets/images/img_about.jpg";
 const AboutPage = () => {
   return (
     <Fragment>

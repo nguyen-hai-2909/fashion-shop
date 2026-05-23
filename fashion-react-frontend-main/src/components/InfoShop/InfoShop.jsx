@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import urlImg1 from "../../assets/images/img_home1.jpeg";
-import urlImg2 from "../../assets/images/img_home2.jpeg";
+import urlImg1 from "../../assets/images/img_home1.jpg";
+import urlImg2 from "../../assets/images/img_home2.png";
 const InfoShop = () => {
   return (
     <section className="section-center home-title">

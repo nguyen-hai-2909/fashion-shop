@@ -1,6 +1,6 @@
 import { FaShoppingCart } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import logoUrl from "../../assets/images/logo.svg";
+import logoUrl from "../../assets/images/Logo.png";
 import { useContext } from "react";
 import { cartContext } from "../../context/CartContext";
 import { renderTotalAmountCartProducts } from "../../utils";

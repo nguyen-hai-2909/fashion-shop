@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import logoImg from "../../assets/images/logo.svg";
+import logoImg from "../../assets/images/Logo.png";
 import { FaBars, FaShoppingCart, FaUser } from "react-icons/fa";
 import { BsFillPersonPlusFill } from "react-icons/bs";
 import { useCallback, useContext, useEffect, useRef } from "react";
