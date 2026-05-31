@@ -88,14 +88,32 @@ const Login = () => {
                 initialValues={{
                   email: "",
                   password: "",
+                  phone: "",
                 }}
                 enableReinitialize
                 validationSchema={Yup.object({
-                  email: Yup.string().required("Require!").email("Invalid email!").trim(),
+                  email: Yup.string()
+                    .required("Email is required")
+                    .trim()
+                    .lowercase()
+                    .matches(
+                      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}$/,
+                      "Email không hợp lệ!"
+                    ),
                   password: Yup.string()
                     .required("Require!")
                     .min(6, "Invalid password!")
+                    .matches(
+                      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+                      "Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt!"
+                    )
                     .trim(),
+                  phone: Yup.string()
+                    .required("Phone is required")
+                    .matches(
+                      /^(84|0[35789])[0-9]{8}$/,
+                      "Số điện thoại không hợp lệ!"
+                    )
                 })}
                 validateOnBlur={false}
                 validateOnChange={false}
@@ -123,6 +141,22 @@ const Login = () => {
                           <ErrorMessage name="email" />
                         </span>
                       </div>
+
+                      <div className="wrap-login-container-content-form-item">
+                        <FastField
+                          type="text"
+                          name="phone"
+                          id="phone"
+                          placeholder="Số điện thoại"
+                          className={
+                            helperFormik.errors.phone && "border-err"
+                          }
+                        />
+                        <span className="err-text">
+                          <ErrorMessage name="phone" />
+                        </span>
+                      </div>
+
                       <div className="wrap-login-container-content-form-item">
                         <div className="relative">
                           <Field
@@ -146,11 +180,9 @@ const Login = () => {
                             )}
                           </span>
                         </div>
-                        {<ErrorMessage name="password" /> ? (
-                          <span className="err-text">
-                            <ErrorMessage name="password" />
-                          </span>
-                        ) : null}
+                        <span className="err-text">
+                          <ErrorMessage name="password" />
+                        </span>
                       </div>
                       <button
                         type="submit"
