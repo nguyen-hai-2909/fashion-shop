@@ -17,10 +17,10 @@ const Footer = () => {
                 <FaHome /> Gia Lam, Hanoi
               </li>
               <li>
-                <FaEnvelope /> nguyenphilong@gmail.com
+                <FaEnvelope /> phamphilong@gmail.com
               </li>
               <li>
-                <FaPhoneAlt /> 0931.0808.18
+                <FaPhoneAlt /> 037.526.1694
               </li>
             </ul>
           </div>
@@ -80,7 +80,7 @@ const Footer = () => {
         </div>
       </div>
       <div className="footer-copyright">
-        <p>Copyright © 2026 Shop Anh Long</p>
+        <p>Fashion Shop 2026</p>
       </div>
     </footer>
   );

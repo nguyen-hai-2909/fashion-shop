@@ -82,20 +82,7 @@ const Login = () => {
         <Navigate to="/user/me" replace={true} />
       ) : (
         <Fragment>
-          <section className="title-section">
-            <div className="section-center">
-              <h3>
-                <a href="/">Home</a> / login
-              </h3>
-            </div>
-          </section>
-          <section
-            style={{
-              height: "calc(80vh - 160px)",
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
+          <section className = "bg-login">
             <div className="wrap-login-container-content">
               <Formik
                 initialValues={{

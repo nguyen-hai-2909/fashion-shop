@@ -243,7 +243,17 @@ $bg-btn-hover: #decbc0;
 }
 
 .bg-admin-login {
-  background-image: url("../../assets/images/IMG-BG.png");
+  background-image: url("../../assets/images/AdminLogin.png");
+  background-size: cover;
+  background-position: center;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bg-login {
+  background-image: url("../../assets/images/background1.png");
   background-size: cover;
   background-position: center;
   height: 100vh;
