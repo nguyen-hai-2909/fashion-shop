@@ -5,7 +5,7 @@ import ChatMessageContent from "./ChatMessageContent";
 import { GetChatbotCatalogService } from "../../services/ProductService";
 import "./SizeConsultant.css";
 
-const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_KEY || "";
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
 
 const FREE_MODELS = [
   "meta-llama/llama-3.3-70b-instruct:free",
@@ -56,63 +56,41 @@ async function completeChat(apiMessages) {
   throw lastError ?? new Error("All models unavailable");
 }
 
-const BASE_PROMPT = `You are Fashion Store's friendly fashion assistant. You help with (1) size recommendations, (2) outfit ideas, and (3) product availability questions using the live catalog below.
+const SYSTEM_PROMPT = `You are Fashion Store's friendly fashion assistant. You help with (1) size recommendations and (2) outfit ideas for different occasions.
+
+Store categories (suggest browsing these on the site when relevant):
+- Men's tops (ao-nam): shirts, polos, tees
+- Men's pants (quan-nam): chinos, trousers, jeans
+- Dresses (vay): dresses for events and casual wear
+- Women's fashion (thoi-trang-nu): tops, skirts, coordinated looks
+- Shoes & bags (giay-tui): sneakers, heels, bags — shoe sizes 35–44
+- Accessories (phu-kien): belts, scarves, jewelry
 
 Size chart (clothing):
 - S: Height 150-158cm, Weight 42-50kg | M: 158-165cm, 50-58kg | L: 163-170cm, 58-66kg | XL: 168-175cm, 65-75kg | XXL: 173-180cm, 74-85kg
-- Shoes: EU sizes 35–44
 
-Outfit suggestions — give 2–4 concrete ideas when asked:
-- Office / work: tailored shirt or blouse, neutral trousers or pencil skirt, closed-toe shoes
-- Going out / casual: relaxed tee or knit top, jeans or wide-leg pants, sneakers
-- Date / evening: dress or smart separates, one statement piece, comfortable heels
+Outfit suggestions — when the customer asks what to wear or is shopping for a purpose, give 2–4 concrete ideas. Examples:
+- Office / work: tailored shirt or blouse, neutral trousers or pencil skirt, closed-toe shoes, minimal accessories
+- Going out / casual hangout: relaxed tee or knit top, jeans or wide-leg pants, sneakers or loafers
+- Date / evening: dress or smart separates, one statement piece, comfortable heels or clean sneakers
 - Party / event: dress or coordinated set, bolder color or print, heels or dress shoes
 - Weekend / travel: layers, comfortable fabrics, versatile shoes
+Ask gender and vibe (formal vs relaxed) if unclear, then suggest items from the categories above.
 
 Size help:
 1. Ask height, weight, and measurements if needed
-2. Between sizes: slim/bodycon → size up, loose fit → regular size
+2. Recommend size from the chart; between sizes: slim/bodycon → size up, loose fit → regular size
+3. For shoes, use EU sizes 35–44
 
-Language: Always reply in the SAME language the customer writes in.
+Language:
+- Always reply in the SAME language the customer uses in their latest message (Vietnamese → Vietnamese, English → English, etc.). If they mix languages, use the language they used most in that message.
 
 Style:
 - Short, warm, practical answers
-- Plain text only — no markdown bold (**), no #. Use "- " for bullet lists
-- Use friendly category names (e.g. "men's tops") never raw slugs
-- Only reference products from the catalog below; never invent names or prices
-- If a size is out of stock (stock 0), say so and suggest alternatives from the catalog
-- Stay within fashion, sizing, and styling topics`;
-
-function buildCatalogBlock(catalog) {
-  if (!catalog || catalog.length === 0) return "";
-  const CATEGORY_NAMES = {
-    "ao-nam": "Men's tops",
-    "quan-nam": "Men's pants",
-    "vay": "Dresses",
-    "thoi-trang-nu": "Women's fashion",
-    "giay-tui": "Shoes & bags",
-    "phu-kien": "Accessories",
-  };
-  const fmt = new Intl.NumberFormat("vi-VN");
-  const lines = catalog.map((p) => {
-    const catLabel = CATEGORY_NAMES[p.category] || p.category || "Other";
-    const price = p.price ? `${fmt.format(p.price)}đ` : "";
-    const variantSummary = (p.variants || [])
-      .map((v) => {
-        const color = v.color ? v.color : "";
-        const size = v.size ? v.size : "";
-        const stock = v.stock != null ? v.stock : 0;
-        return `${color} ${size}(${stock > 0 ? `in stock: ${stock}` : "out of stock"})`.trim();
-      })
-      .join(", ");
-    return `- ${p.name} | ${catLabel}${price ? ` | ${price}` : ""}${variantSummary ? ` | Variants: ${variantSummary}` : ""}`;
-  });
-  return `\nLive product catalog (${catalog.length} products):\n${lines.join("\n")}`;
-}
-
-function buildSystemPrompt(catalog) {
-  return BASE_PROMPT + buildCatalogBlock(catalog);
-}
+- Use plain text only: do NOT use markdown (**bold**, ##, or * bullets). For lists use lines starting with "- " (dash space)
+- When mentioning store sections, use friendly names (e.g. "men's tops", "men's pants") — never raw slugs like ao-nam
+- Do not invent products or prices; suggest types of items to browse on Fashion Store
+- Stay within fashion, sizing, and styling — politely decline unrelated topics`;
 
 const WELCOME_MSG = {
   role: "assistant",
@@ -125,40 +103,15 @@ export default function SizeConsultant() {
   const [messages, setMessages] = useState([WELCOME_MSG]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [catalog, setCatalog] = useState(null);
-  const [catalogLoading, setCatalogLoading] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
-  const catalogFetched = useRef(false);
-
-  const fetchCatalog = useCallback(async () => {
-    if (catalogFetched.current) return;
-    catalogFetched.current = true;
-    setCatalogLoading(true);
-    try {
-      const data = await GetChatbotCatalogService();
-      const list = Array.isArray(data) ? data : [];
-      setCatalog(list);
-    } catch {
-      setCatalog([]);
-    } finally {
-      setCatalogLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
     if (open) {
-      fetchCatalog();
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
       setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [open, fetchCatalog]);
-
-  useEffect(() => {
-    if (open) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages, open]);
+  }, [open, messages]);
 
   const sendMessage = async () => {
     const text = input.trim();
@@ -171,9 +124,8 @@ export default function SizeConsultant() {
     setLoading(true);
 
     try {
-      const systemPrompt = buildSystemPrompt(catalog);
       const reply = await completeChat([
-        { role: "system", content: systemPrompt },
+        { role: "system", content: SYSTEM_PROMPT },
         ...nextMessages,
       ]);
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
@@ -184,7 +136,10 @@ export default function SizeConsultant() {
           : "Sorry, something went wrong. Please try again in a moment.";
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: fallback },
+        {
+          role: "assistant",
+          content: fallback,
+        },
       ]);
     } finally {
       setLoading(false);
@@ -208,14 +163,8 @@ export default function SizeConsultant() {
                 <RiRobot2Line />
               </div>
               <div>
-                <p className="sc-title">Fashion AI Assistant</p>
-                <span className="sc-status">
-                  {catalogLoading
-                    ? "Loading catalog…"
-                    : catalog && catalog.length > 0
-                    ? `Online · ${catalog.length} products`
-                    : "Online"}
-                </span>
+                <p className="sc-title">ChatBot Support Helper</p>
+                <span className="sc-status">Online</span>
               </div>
             </div>
             <button

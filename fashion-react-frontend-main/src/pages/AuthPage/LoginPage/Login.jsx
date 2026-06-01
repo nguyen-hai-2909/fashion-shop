@@ -51,10 +51,15 @@ const Login = () => {
 
   const handleSubmit = useCallback(async (values) => {
     try {
-      dispatch({
-        type: "LOGIN_START",
-      });
-      const response = await mutateLogin.mutateAsync(values);
+      dispatch({ type: "LOGIN_START" });
+      const isPhone = /^(84|0[35789])[0-9]{8}$/.test(values.identifier);
+      const payload = {
+        password: values.password,
+        ...(isPhone
+          ? { phone: values.identifier }
+          : { email: values.identifier }),
+      };
+      const response = await mutateLogin.mutateAsync(payload);
       const { success, message } = response;
       if (!success) {
         throw new Error(message);
@@ -86,34 +91,26 @@ const Login = () => {
             <div className="wrap-login-container-content">
               <Formik
                 initialValues={{
-                  email: "",
+                  identifier: "",
                   password: "",
-                  phone: "",
                 }}
                 enableReinitialize
                 validationSchema={Yup.object({
-                  email: Yup.string()
-                    .required("Email is required")
-                    .trim()
-                    .lowercase()
-                    .matches(
-                      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}$/,
-                      "Invalid email format!"
-                    ),
-                  password: Yup.string()
-                    .required("Require!")
-                    .min(6, "Invalid password!")
-                    .matches(
-                      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-                      "Password must include at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character!"
+                  identifier: Yup.string()
+                    .required("Please enter your email or phone number!")
+                    .test(
+                      "email-or-phone",
+                      "Invalid email or phone number!",
+                      (value) => {
+                        if (!value) return false;
+                        const emailRegex =
+                          /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}$/;
+                        const phoneRegex = /^(84|0[35789])[0-9]{8}$/;
+                        return emailRegex.test(value) || phoneRegex.test(value);
+                      }
                     )
                     .trim(),
-                  phone: Yup.string()
-                    .required("Phone is required")
-                    .matches(
-                      /^(84|0[35789])[0-9]{8}$/,
-                      "Invalid phone number!"
-                    )
+                  password: Yup.string().required("Password is required!").trim(),
                 })}
                 validateOnBlur={false}
                 validateOnChange={false}
@@ -130,30 +127,15 @@ const Login = () => {
                       <div className="wrap-login-container-content-form-item">
                         <FastField
                           type="text"
-                          name="email"
-                          id="email"
-                          placeholder="Email"
+                          name="identifier"
+                          id="identifier"
+                          placeholder="Email or phone number"
                           className={
-                            helperFormik.errors.email && "border-err"
+                            helperFormik.errors.identifier && "border-err"
                           }
                         />
                         <span className="err-text">
-                          <ErrorMessage name="email" />
-                        </span>
-                      </div>
-
-                      <div className="wrap-login-container-content-form-item">
-                        <FastField
-                          type="text"
-                          name="phone"
-                          id="phone"
-                          placeholder="Phone number"
-                          className={
-                            helperFormik.errors.phone && "border-err"
-                          }
-                        />
-                        <span className="err-text">
-                          <ErrorMessage name="phone" />
+                          <ErrorMessage name="identifier" />
                         </span>
                       </div>
 
@@ -163,7 +145,7 @@ const Login = () => {
                             name="password"
                             type={`${isEye ? "text" : "password"}`}
                             id="password"
-                            placeholder="Password must be at least 6 characters!"
+                            placeholder="Password"
                             className={
                               helperFormik.errors.password && "border-err"
                             }
