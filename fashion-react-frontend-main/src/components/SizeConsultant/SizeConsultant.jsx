@@ -5,7 +5,7 @@ import ChatMessageContent from "./ChatMessageContent";
 import { GetChatbotCatalogService } from "../../services/ProductService";
 import "./SizeConsultant.css";
 
-
+// themvaodaychoem
 
 const FREE_MODELS = [
   "meta-llama/llama-3.3-70b-instruct:free",
