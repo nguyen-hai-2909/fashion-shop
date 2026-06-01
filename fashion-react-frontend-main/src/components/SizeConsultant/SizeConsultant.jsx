@@ -5,7 +5,7 @@ import ChatMessageContent from "./ChatMessageContent";
 import { GetChatbotCatalogService } from "../../services/ProductService";
 import "./SizeConsultant.css";
 
-const OPENROUTER_API_KEY = process.env.REACT_APP_OPENROUTER_API_KEY;
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_KEY || "";
 
 const FREE_MODELS = [
   "meta-llama/llama-3.3-70b-instruct:free",
