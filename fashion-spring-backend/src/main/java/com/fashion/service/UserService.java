@@ -54,9 +54,19 @@ public class UserService {
     }
 
     public Map<String, Object> createUser(Map<String, Object> body) {
+        String email = (String) body.get("email");
+        String phone = (String) body.get("phoneNumber");
+
+        if (email != null && !email.isBlank() && userRepository.existsByEmail(email)) {
+            return Map.of("success", false, "message", "Your email is existed");
+        }
+        if (phone != null && !phone.isBlank() && userRepository.existsByPhone(phone)) {
+            return Map.of("success", false, "message", "Your phone number is existed");
+        }
+
         User u = new User();
-        u.setPhone((String) body.get("phoneNumber"));
-        u.setEmail((String) body.get("email"));
+        u.setPhone(phone);
+        u.setEmail(email);
         u.setFullName(body.get("name") != null ? (String) body.get("name") : (String) body.get("full_name"));
         u.setRole("customer");
         String raw = (String) body.get("password");
