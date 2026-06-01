@@ -109,23 +109,16 @@ public class FashionDataSeeder implements ApplicationRunner {
     }
 
     private void ensureUser(String email, String phone, String fullName, String rawPassword, String role) {
-        var users = userRepository.findAllByEmail(email);
-        if (users == null || users.isEmpty()) {
-            User user = new User();
-            user.setEmail(email);
-            user.setPhone(phone);
-            user.setFullName(fullName);
-            user.setPassword(passwordEncoder.encode(rawPassword));
-            user.setRole(role);
-            userRepository.save(user);
+        if (userRepository.existsByEmail(email) || userRepository.existsByPhone(phone)) {
             return;
         }
-
-        if (users.size() > 1) {
-            for (int i = 1; i < users.size(); i++) {
-                userRepository.deleteById(users.get(i).getId());
-            }
-        }
+        User user = new User();
+        user.setEmail(email);
+        user.setPhone(phone);
+        user.setFullName(fullName);
+        user.setPassword(passwordEncoder.encode(rawPassword));
+        user.setRole(role);
+        userRepository.save(user);
     }
 
     private static Category cat(String name, String slug, String parentId, int sort) {
