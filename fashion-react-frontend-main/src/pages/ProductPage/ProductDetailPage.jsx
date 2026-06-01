@@ -18,6 +18,18 @@ import {
   SubmitReviewService,
 } from "../../services/ReviewService";
 
+/** Return true if the hex colour is light (luminance > 0.55). */
+function isLightColor(hex) {
+  if (!hex || !hex.startsWith("#")) return false;
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const r = parseInt(full.slice(0, 2), 16) / 255;
+  const g = parseInt(full.slice(2, 4), 16) / 255;
+  const b = parseInt(full.slice(4, 6), 16) / 255;
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminance > 0.55;
+}
+
 const ProductDetailPage = () => {
   const { identifier } = useParams();
   const location = useLocation();
@@ -302,14 +314,22 @@ const ProductDetailPage = () => {
                   <div style={{ display: "flex" }}>
                     {colorList.map((color) => {
                       const hex = variants.find((v) => v?.color === color)?.hex;
-                      const swatch = hex || color;
+                      const swatch = hex?.startsWith("#") ? hex : "#e8e8e8";
+                      const isActive = selectedColor === color;
+                      const tickColor = isLightColor(swatch) ? "#222" : "#fff";
                       return (
                         <button
                           key={color}
                           type="button"
                           title={color}
-                          className={`${selectedColor === color ? "color-btn active" : "color-btn"}`}
-                          style={{ backgroundColor: swatch?.startsWith("#") ? swatch : "#e8e8e8", border: "1px solid #dedede" }}
+                          className={`color-btn${isActive ? " active" : ""}`}
+                          style={{
+                            backgroundColor: swatch,
+                            border: isActive
+                              ? `2px solid ${tickColor === "#fff" ? "#888" : "#444"}`
+                              : "1px solid #dedede",
+                            color: isActive ? tickColor : "transparent",
+                          }}
                           onClick={() => {
                             setSelectedColor(color);
                             const first = variants.find((v) => v?.color === color);
@@ -327,22 +347,34 @@ const ProductDetailPage = () => {
 
                 <div className="info" style={{ marginBottom: 12 }}>
                   <span>Size:</span>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    {sizesOfColor.map((sz) => (
-                      <button
-                        key={sz}
-                        type="button"
-                        className={`btn ${selectedSize === sz ? "" : "btn-light"}`}
-                        style={{ padding: "6px 12px" }}
-                        onClick={() => {
-                          setSelectedSize(sz);
-                          setAmountProduct(1);
-                          setImgMain(0);
-                        }}
-                      >
-                        {sz}
-                      </button>
-                    ))}
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {sizesOfColor.map((sz) => {
+                      const isActive = selectedSize === sz;
+                      return (
+                        <button
+                          key={sz}
+                          type="button"
+                          style={{
+                            padding: "5px 14px",
+                            borderRadius: "var(--radius)",
+                            border: `2px solid var(--clr-primary-5)`,
+                            background: isActive ? "var(--clr-primary-5)" : "transparent",
+                            color: isActive ? "#fff" : "var(--clr-primary-3)",
+                            fontWeight: isActive ? 600 : 400,
+                            cursor: "pointer",
+                            fontSize: "0.875rem",
+                            transition: "var(--transition)",
+                          }}
+                          onClick={() => {
+                            setSelectedSize(sz);
+                            setAmountProduct(1);
+                            setImgMain(0);
+                          }}
+                        >
+                          {sz}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 

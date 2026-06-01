@@ -1,47 +1,28 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { DeleteOutlined, SettingOutlined } from "@ant-design/icons";
-import { Button, Flex, Input, Modal, Space, Switch, Table } from "antd";
-import { Fragment, useContext, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Flex, Input } from "antd";
+import { Fragment, useCallback, useContext, useMemo, useState } from "react";
 import HeaderTable from "../../../common/HeaderTable";
 import Paper from "../../../common/Paper";
 import { adminContext } from "../../../context/AdminContext";
-import {
-  CreateCategoryService,
-  DeleteCategoryService,
-  GetCategoriesService,
-  ToggleCategoryService,
-  UpdateCategoryService,
-} from "../../../services/CategoryService";
+import { DeleteCategoryService, GetCategoriesService } from "../../../services/CategoryService";
+import CategoryList from "./CategoryList/CategoryList";
 import { toast } from "react-toastify";
+import { useMutation } from "@tanstack/react-query";
 
 const Category = () => {
   const { tokenAdmin } = useContext(adminContext);
   const [q, setQ] = useState("");
-  const [editing, setEditing] = useState(null);
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    slug: "",
-    isActive: true,
-  });
+  const [categoryValue, setCategoryValue] = useState(null);
+  const [isOpenDrawer, setIsOpenDrawer] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [isOpenModal, setIsOpenModal] = useState(false);
 
   const { data, isFetching, refetch } = useQuery(
     ["categories-admin"],
     () => GetCategoriesService({ all: true }),
-    {
-      onSuccess: () => {},
-    }
+    { enabled: Boolean(tokenAdmin) }
   );
 
-  const createMut = useMutation({
-    mutationFn: (payload) => CreateCategoryService(payload, tokenAdmin),
-  });
-  const updateMut = useMutation({
-    mutationFn: ({ id, payload }) => UpdateCategoryService(id, payload, tokenAdmin),
-  });
-  const toggleMut = useMutation({
-    mutationFn: (id) => ToggleCategoryService(id, tokenAdmin),
-  });
   const deleteMut = useMutation({
     mutationFn: (id) => DeleteCategoryService(id, tokenAdmin),
   });
@@ -52,154 +33,69 @@ const Category = () => {
     if (!key) return list;
     return list.filter(
       (c) =>
-        String(c?.name || "")
-          .toLowerCase()
-          .includes(key) ||
-        String(c?.slug || "")
-          .toLowerCase()
-          .includes(key)
+        String(c?.name || "").toLowerCase().includes(key) ||
+        String(c?.slug || "").toLowerCase().includes(key)
     );
   }, [data?.data, q]);
 
-  const openCreate = () => {
-    setEditing(null);
-    setForm({ name: "", slug: "", isActive: true });
-    setOpen(true);
-  };
-
-  const openEdit = (row) => {
-    setEditing(row);
-    setForm({
-      name: row?.name || "",
-      slug: row?.slug || "",
-      isActive: row?.isActive !== false,
-    });
-    setOpen(true);
-  };
-
-  const handleSubmit = async () => {
+  const handleDelete = useCallback(async () => {
     try {
-      if (!form.name.trim()) {
-        toast.error("Category name is required");
-        return;
-      }
-      const payload = {
-        name: form.name.trim(),
-        slug: form.slug.trim(),
-        /** Backend uses sortOrder for menu ordering; keep existing on edit, 0 for new. */
-        sortOrder: editing
-          ? Number(editing.sortOrder ?? 0)
-          : 0,
-        isActive: !!form.isActive,
-      };
-      const res = editing?._id
-        ? await updateMut.mutateAsync({ id: editing._id, payload })
-        : await createMut.mutateAsync(payload);
-      if (!res?.success) throw new Error(res?.message || "Failed");
-      toast.success(res.message);
-      setOpen(false);
+      await Promise.all(selectedRowKeys.map((id) => deleteMut.mutateAsync(id)));
+      toast.success(
+        selectedRowKeys.length === 1
+          ? "Category deleted"
+          : `${selectedRowKeys.length} categories deleted`
+      );
+      setSelectedRowKeys([]);
+      setIsOpenModal(false);
       refetch();
     } catch (e) {
-      toast.error(e.message);
+      toast.error(e.message || "Delete failed");
     }
-  };
-
-  const columns = [
-    { title: "Name", dataIndex: "name" },
-    { title: "Slug", dataIndex: "slug" },
-    {
-      title: "Status",
-      dataIndex: "isActive",
-      width: 140,
-      render: (_, row) => (
-        <Switch
-          checked={row?.isActive !== false}
-          onChange={async () => {
-            const res = await toggleMut.mutateAsync(row._id);
-            if (res?.success) refetch();
-          }}
-        />
-      ),
-    },
-    {
-      title: "Actions",
-      width: 120,
-      align: "center",
-      render: (_, row) => (
-        <Flex justify="center" gap="small">
-          <Button
-            type="primary"
-            ghost
-            icon={<SettingOutlined />}
-            onClick={() => openEdit(row)}
-            title="Edit category"
-          />
-          <Button
-            danger
-            type="primary"
-            ghost
-            icon={<DeleteOutlined />}
-            title="Delete category"
-            onClick={async () => {
-              const res = await deleteMut.mutateAsync(row._id);
-              if (res?.success) {
-                toast.success(res.message);
-                refetch();
-              }
-            }}
-          />
-        </Flex>
-      ),
-    },
-  ];
+  }, [selectedRowKeys, deleteMut, refetch]);
 
   return (
     <Fragment>
-      <HeaderTable title="Categories" isCreate={true} onCreate={openCreate} />
+      <HeaderTable
+        title="Categories"
+        isCreate={true}
+        isDelete={true}
+        onCreate={() => {
+          setCategoryValue(null);
+          setIsOpenDrawer(true);
+        }}
+        onRefetch={refetch}
+        selectedRowKeys={selectedRowKeys}
+        onDelete={handleDelete}
+        isLoadingDelete={deleteMut.isLoading}
+        isOpenModal={isOpenModal}
+        handleChangeModal={() => setIsOpenModal((v) => !v)}
+        deleteEntity="category"
+      />
       <Paper isFix={true}>
-        <Flex justify="space-between" style={{ marginBottom: 12 }}>
-          <Input
+        <Flex style={{ marginBottom: 12 }}>
+          <Input.Search
             placeholder="Search by name or slug"
+            allowClear
+            style={{ maxWidth: 420 }}
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            style={{ maxWidth: 360 }}
+            onSearch={(v) => setQ(v ?? "")}
           />
         </Flex>
-        <Table
-          rowKey="_id"
-          loading={isFetching}
-          columns={columns}
-          dataSource={rows}
-          pagination={false}
+        <CategoryList
+          isLoading={isFetching}
+          data={rows}
+          q={q}
+          categoryValue={categoryValue}
+          setCategoryValue={setCategoryValue}
+          isOpenDrawer={isOpenDrawer}
+          setIsOpenDrawer={setIsOpenDrawer}
+          refetch={refetch}
+          selectedRowKeys={selectedRowKeys}
+          setSelectedRowKeys={setSelectedRowKeys}
         />
       </Paper>
-      <Modal
-        title={editing ? "Edit category" : "New category"}
-        open={open}
-        onCancel={() => setOpen(false)}
-        onOk={handleSubmit}
-        confirmLoading={createMut.isLoading || updateMut.isLoading}
-      >
-        <Space direction="vertical" style={{ width: "100%" }}>
-          <Input
-            placeholder="Name"
-            value={form.name}
-            onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-          />
-          <Input
-            placeholder="Slug (optional)"
-            value={form.slug}
-            onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value }))}
-          />
-          <Flex align="center" gap={8}>
-            <span>Active</span>
-            <Switch
-              checked={form.isActive}
-              onChange={(v) => setForm((p) => ({ ...p, isActive: v }))}
-            />
-          </Flex>
-        </Space>
-      </Modal>
     </Fragment>
   );
 };

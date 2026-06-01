@@ -183,6 +183,45 @@ public class AdminService {
         return m;
     }
 
+    public Map<String, Object> updateUser(String userId, Map<String, Object> body) {
+        User u = userRepository.findById(userId).orElse(null);
+        if (u == null) {
+            return Map.of("success", false, "message", "User not found");
+        }
+        String role = normalizeRole(u.getRole());
+        if ("admin".equals(role) || "manager".equals(role)) {
+            return Map.of("success", false, "message", "Cannot modify admin or manager accounts here");
+        }
+        if (body.containsKey("locked")) {
+            u.setLocked(Boolean.TRUE.equals(body.get("locked")));
+        }
+        if (body.containsKey("fullName")) {
+            u.setFullName(Objects.toString(body.get("fullName"), "").trim());
+        }
+        if (body.containsKey("phone")) {
+            u.setPhone(Objects.toString(body.get("phone"), "").trim());
+        }
+        userRepository.save(u);
+        return Map.of("success", true, "message", "Customer updated");
+    }
+
+    public Map<String, Object> lockUser(String userId, boolean lock) {
+        return updateUser(userId, Map.of("locked", lock));
+    }
+
+    public Map<String, Object> deleteUser(String userId) {
+        User u = userRepository.findById(userId).orElse(null);
+        if (u == null) {
+            return Map.of("success", false, "message", "User not found");
+        }
+        String role = normalizeRole(u.getRole());
+        if ("admin".equals(role) || "manager".equals(role)) {
+            return Map.of("success", false, "message", "Cannot delete admin or manager accounts");
+        }
+        userRepository.deleteById(userId);
+        return Map.of("success", true, "message", "Account deleted");
+    }
+
     public Map<String, Object> login(Map<String, String> body) {
         User admin = userRepository.findByEmail(body.get("email")).orElse(null);
         String role = admin != null ? Objects.toString(admin.getRole(), "") : "";

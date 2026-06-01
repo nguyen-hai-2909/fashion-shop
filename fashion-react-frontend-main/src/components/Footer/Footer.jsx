@@ -10,7 +10,7 @@ const Footer = () => {
             <h3>About</h3>
             <p>
               With a friendly and dedicated support team, we always aim to
-              deliver the best fashion shopping experience at ComfySloth.
+              deliver the best fashion shopping experience at FashionShop.
             </p>
             <ul>
               <li>

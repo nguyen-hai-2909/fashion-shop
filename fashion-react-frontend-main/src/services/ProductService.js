@@ -29,6 +29,10 @@ export const ToggleProductStorefrontService = async (id, token) => {
   );
 };
 
+export const GetChatbotCatalogService = async () => {
+  return await axios.get(`${APIEndpoint.PRODUCTS_ENDPOINT}/chatbot-catalog`);
+};
+
 export const RemoveProductService = async (ids, token) => {
   return await axios.delete(
     `${APIEndpoint.PRODUCTS_ENDPOINT}/multiple?${ids}`,

@@ -5,6 +5,7 @@ import Footer from "../components/Footer/Footer";
 import Sidebar from "../components/Sidebar/Sidebar";
 import MessengerCustomerChat from "react-messenger-customer-chat";
 import BackToTopButton from "../components/BackToTopButton";
+import SizeConsultant from "../components/SizeConsultant/SizeConsultant";
 
 const Layout = ({ children, isLayout }) => {
   //! State
@@ -40,6 +41,7 @@ const Layout = ({ children, isLayout }) => {
         </Fragment>
       )}
       <BackToTopButton />
+      <SizeConsultant />
     </Fragment>
   );
 };

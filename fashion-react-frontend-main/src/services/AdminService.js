@@ -82,3 +82,21 @@ export const DeleteStaffAdminService = async (id, token) => {
     headers: { Authorization: `Bearer ${token}` },
   });
 };
+
+export const UpdateUserAdminService = async (id, data, token) => {
+  return await axios.patch(
+    `${ApiEndpoint.ADMIN_ENDPOINT}/user/${id}`,
+    data,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+};
+
+export const LockUserAdminService = async (id, locked, token) => {
+  return await UpdateUserAdminService(id, { locked }, token);
+};
+
+export const DeleteUserAdminService = async (id, token) => {
+  return await axios.delete(`${ApiEndpoint.ADMIN_ENDPOINT}/user/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};

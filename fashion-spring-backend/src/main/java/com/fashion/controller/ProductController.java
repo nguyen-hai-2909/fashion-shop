@@ -20,6 +20,12 @@ public class ProductController {
         return ResponseEntity.ok(productService.getAll(query));
     }
 
+    /** Lean product catalog for the AI chatbot (public, no auth required). */
+    @GetMapping("/chatbot-catalog")
+    public ResponseEntity<?> chatbotCatalog() {
+        return ResponseEntity.ok(productService.getChatbotCatalog());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<?> one(@PathVariable String id) {
         return ResponseEntity.ok(productService.getOne(id));

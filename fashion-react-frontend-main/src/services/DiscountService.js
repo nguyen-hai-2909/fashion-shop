@@ -36,6 +36,12 @@ export const UpdateDiscountService = async (id, data, token) => {
   });
 };
 
+export const DeleteDiscountService = async (id, token) => {
+  return await axios.delete(`${APIEndpoint.DISCOUNT_ENDPOINT}/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
 export const DeleteMultiDiscountService = async (ids, token) => {
   return await axios.delete(`${APIEndpoint.DISCOUNT_ENDPOINT}/multi?${ids}`, {
     headers: { Authorization: `Bearer ${token}` },

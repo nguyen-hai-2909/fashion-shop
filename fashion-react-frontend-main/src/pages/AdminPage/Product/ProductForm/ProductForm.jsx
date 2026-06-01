@@ -41,10 +41,16 @@ import HashLoader from "react-spinners/HashLoader";
 import { GetCategoriesService } from "../../../../services/CategoryService";
 
 const UNSAVED_KEY = "admin-unsaved-changes";
-const sizeOptions = ["XS", "S", "M", "L", "XL", "XXL"].map((s) => ({
+const clothingSizeOptions = ["XS", "S", "M", "L", "XL", "XXL"].map((s) => ({
   label: s,
   value: s,
 }));
+const shoeSizeOptions = ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44"].map((s) => ({
+  label: s,
+  value: s,
+}));
+const getSizeOptions = (category) =>
+  category === "giay-tui" ? shoeSizeOptions : clothingSizeOptions;
 
 const normalizeImages = (list = []) =>
   (list || []).map((item) => ({
@@ -191,9 +197,10 @@ const ProductForm = () => {
 
   const handleAddVariant = useCallback((helperFormik) => {
     const { values, setFieldValue } = helperFormik;
+    const defaultSize = values.category === "giay-tui" ? "38" : "M";
     setFieldValue("variants", [
       ...(values.variants || []),
-      { color: "", size: "M", amount: 0, price: values.price || 0, imageUrl: "" },
+      { color: "", size: defaultSize, amount: 0, price: values.price || 0, imageUrl: "" },
     ]);
   }, []);
 
@@ -474,14 +481,34 @@ const ProductForm = () => {
                         />
                       </Col>
                       <Col span={8}>
-                        <FastField
-                          component={SelectCommon}
-                          name="category"
+                        <span style={{ marginBottom: "8px", fontWeight: 500, display: "block" }}>
+                          Category
+                        </span>
+                        <SelectCommon
+                          field={{ name: "category", value: helperFormik.values.category }}
+                          form={{
+                            errors: helperFormik.errors,
+                            touched: helperFormik.touched,
+                            setFieldValue: (name, val) => {
+                              helperFormik.setFieldValue(name, val);
+                              const isShoe = val === "giay-tui";
+                              const defaultSize = isShoe ? "38" : "M";
+                              const updated = (helperFormik.values.variants || []).map((v) => ({
+                                ...v,
+                                size: getSizeOptions(val).some((o) => o.value === v.size)
+                                  ? v.size
+                                  : defaultSize,
+                              }));
+                              helperFormik.setFieldValue("variants", updated);
+                            },
+                          }}
                           options={categorySelectOptions}
-                          title="Category"
                           placeholder="Select category"
                           style={{ width: "100%" }}
                         />
+                        {helperFormik.errors.category && (
+                          <span className="err-text">{helperFormik.errors.category}</span>
+                        )}
                       </Col>
                     </Row>
                     <Row gutter={16} style={{ marginTop: "1rem" }}>
@@ -616,7 +643,7 @@ const ProductForm = () => {
                                     component={SelectCommon}
                                     name={`variants[${index}].size`}
                                     placeholder="Size"
-                                    options={sizeOptions}
+                                    options={getSizeOptions(helperFormik.values.category)}
                                     style={{ width: "100%" }}
                                   />
                                 </Col>

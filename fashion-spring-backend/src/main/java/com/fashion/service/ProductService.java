@@ -305,6 +305,37 @@ public class ProductService {
         return Map.of("success", true, "message", "Remove successfully!");
     }
 
+    /**
+     * Lean catalog for AI chatbot — only active products, no images.
+     * Each entry: name, slug, category, brand, price, variants[color, size, stock].
+     */
+    public List<Map<String, Object>> getChatbotCatalog() {
+        return productRepository.findAll().stream()
+                .filter(p -> "active".equals(p.getStatus()))
+                .map(p -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("name", p.getName());
+                    m.put("slug", p.getSlug() != null ? p.getSlug() : "");
+                    m.put("category", p.getCategory() != null ? p.getCategory() : "");
+                    m.put("brand", p.getBrand() != null ? p.getBrand() : "");
+                    m.put("price", (long) minVariantPrice(p));
+                    List<Map<String, Object>> variants = new ArrayList<>();
+                    if (p.getVariants() != null) {
+                        for (Product.ProductVariant v : p.getVariants()) {
+                            if (Boolean.FALSE.equals(v.getIsActive())) continue;
+                            Map<String, Object> vm = new LinkedHashMap<>();
+                            vm.put("color", v.getColor() != null ? v.getColor().getName() : "");
+                            vm.put("size", v.getSize() != null ? v.getSize() : "");
+                            vm.put("stock", v.getInventory() != null ? v.getInventory() : 0);
+                            variants.add(vm);
+                        }
+                    }
+                    m.put("variants", variants);
+                    return m;
+                })
+                .toList();
+    }
+
     /** Shape compatible with existing React (stock, images, company, price) */
     public Map<String, Object> toClientProduct(Product p) {
         Map<String, Object> m = new LinkedHashMap<>();

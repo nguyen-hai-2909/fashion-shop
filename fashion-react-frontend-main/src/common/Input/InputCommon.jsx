@@ -4,7 +4,7 @@ import { Fragment } from "react";
 const { TextArea } = Input;
 const InputCommon = (props) => {
   //! Props
-  const { field, form, title, placeholder, style, type, isTextArea, prefix } =
+  const { field, form, title, placeholder, style, type, isTextArea, prefix, disabled } =
     props;
   //! State
   const name = field?.name;
@@ -61,6 +61,7 @@ const InputCommon = (props) => {
           status={error && touched ? "error" : null}
           onChange={handleChange}
           prefix={prefix ?? null}
+          disabled={disabled}
         />
         {error && <span className="err-text">{error}</span>}
       </Flex>

@@ -12,8 +12,8 @@ export function compactToastMessage(msg) {
 
   const known = {
     "add product successfully": "Product added",
-    "thêm vào giỏ hàng thành công": "Product added",
-    "đăng ký nhận tin thành công": "Thanks for subscribing",
+    "added to cart successfully": "Product added",
+    "newsletter subscription successful": "Thanks for subscribing",
     "subscribe success": "Thanks for subscribing",
     "message sent": "Message sent",
   };

@@ -65,6 +65,16 @@ public class AdminController {
         return ResponseEntity.ok(adminService.users(page, perPage, email, name, phoneNumber, q));
     }
 
+    @PatchMapping("/user/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable String id, @RequestBody Map<String, Object> body) {
+        return ResponseEntity.ok(adminService.updateUser(id, body));
+    }
+
+    @DeleteMapping("/user/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable String id) {
+        return ResponseEntity.ok(adminService.deleteUser(id));
+    }
+
     @GetMapping("/order")
     public ResponseEntity<?> orders(
             @RequestParam(defaultValue = "10") int perPage,

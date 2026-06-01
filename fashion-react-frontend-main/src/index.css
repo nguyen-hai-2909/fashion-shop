@@ -571,17 +571,18 @@ nav {
 .back-to-top-btn {
   position: fixed;
   right: 20px;
-  bottom: 88px;
-  width: 44px;
-  height: 44px;
+  bottom: 152px;
+  width: 52px;
+  height: 52px;
   border: none;
   border-radius: 999px;
   background: var(--clr-primary-5);
   color: var(--clr-white);
+  font-size: 1.25rem;
   display: grid;
   place-items: center;
   cursor: pointer;
-  box-shadow: var(--dark-shadow);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
   z-index: 1000;
 }
 .back-to-top-btn:hover {

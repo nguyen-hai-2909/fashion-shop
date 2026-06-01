@@ -64,6 +64,8 @@ const User = () => {
           data={data}
           query={query}
           setQuery={setQuery}
+          tokenAdmin={tokenAdmin}
+          onRefetch={refetch}
         />
       </Paper>
     </Fragment>

@@ -98,21 +98,21 @@ const Login = () => {
                     .lowercase()
                     .matches(
                       /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}$/,
-                      "Email không hợp lệ!"
+                      "Invalid email format!"
                     ),
                   password: Yup.string()
                     .required("Require!")
                     .min(6, "Invalid password!")
                     .matches(
                       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-                      "Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt!"
+                      "Password must include at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character!"
                     )
                     .trim(),
                   phone: Yup.string()
                     .required("Phone is required")
                     .matches(
                       /^(84|0[35789])[0-9]{8}$/,
-                      "Số điện thoại không hợp lệ!"
+                      "Invalid phone number!"
                     )
                 })}
                 validateOnBlur={false}
@@ -147,7 +147,7 @@ const Login = () => {
                           type="text"
                           name="phone"
                           id="phone"
-                          placeholder="Số điện thoại"
+                          placeholder="Phone number"
                           className={
                             helperFormik.errors.phone && "border-err"
                           }
@@ -205,7 +205,7 @@ const Login = () => {
                       >
                         <hr style={{ flex: 1, borderColor: "#e8e8e8" }} />
                         <span style={{ color: "#999", fontSize: "12px" }}>
-                          hoặc
+                          or
                         </span>
                         <hr style={{ flex: 1, borderColor: "#e8e8e8" }} />
                       </div>
@@ -223,7 +223,7 @@ const Login = () => {
                           text="signin_with"
                           shape="rectangular"
                           width="100%"
-                          locale="vi"
+                          locale="en"
                         />
                       </div>
                     </Form>

@@ -37,7 +37,7 @@ const Signup = () => {
       navigate("/login", { replace: true });
     } catch (error) {
       console.log("error", error);
-      toast.error(error.message);
+      toast.error(error.message || "Registration failed. Please try again.");
     }
   }, []);
   //! Effect
@@ -174,11 +174,9 @@ const Signup = () => {
                             )}
                           </span>
                         </div>
-                        {<ErrorMessage name="password" /> ? (
-                          <span className="err-text">
-                            <ErrorMessage name="password" />
-                          </span>
-                        ) : null}
+                        <span className="err-text">
+                          <ErrorMessage name="password" />
+                        </span>
                       </div>
                       <div className="wrap-login-container-content-form-item">
                         <div className="relative">

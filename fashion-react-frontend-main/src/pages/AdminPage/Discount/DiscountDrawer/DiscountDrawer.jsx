@@ -1,11 +1,12 @@
 /* eslint-disable react/prop-types */
 import { Fragment, useCallback, useContext, useMemo } from "react";
 import { FastField, Form, Formik } from "formik";
-import { Button, Drawer, Flex, Select, Space, Typography } from "antd";
+import { Button, Drawer, Flex, Modal, Select, Space, Typography } from "antd";
 import InputCommon from "../../../../common/Input/InputCommon";
 import { useMutation } from "@tanstack/react-query";
 import {
   CreateDiscountService,
+  DeleteDiscountService,
   UpdateDiscountService,
 } from "../../../../services/DiscountService";
 import { adminContext } from "../../../../context/AdminContext";
@@ -19,12 +20,7 @@ const typeOptions = [
 
 function buildInitialValues(discount) {
   if (!discount) {
-    return {
-      discountCode: "",
-      type: "percentage",
-      valueNum: "",
-      usageLimit: "",
-    };
+    return { discountCode: "", type: "percentage", valueNum: "", usageLimit: "" };
   }
   const vd = discount.valueDiscount != null ? String(discount.valueDiscount) : "";
   const fromType = discount.type === "fixed_amount" ? "fixed_amount" : "percentage";
@@ -53,7 +49,10 @@ const DiscountDrawer = (props) => {
     mutationFn: (data) => CreateDiscountService(data, tokenAdmin),
   });
   const mutateUpdate = useMutation({
-    mutationFn: (data) => UpdateDiscountService(discount._id, data, tokenAdmin),
+    mutationFn: (data) => UpdateDiscountService(discount?._id, data, tokenAdmin),
+  });
+  const mutateDelete = useMutation({
+    mutationFn: (id) => DeleteDiscountService(id, tokenAdmin),
   });
 
   const handleSubmit = useCallback(
@@ -69,8 +68,7 @@ const DiscountDrawer = (props) => {
         code,
         type: values.type,
         value: v,
-        valueDiscount:
-          values.type === "percentage" ? `${v}%` : String(v),
+        valueDiscount: values.type === "percentage" ? `${v}%` : String(v),
         usage_limit:
           values.usageLimit === "" || values.usageLimit == null
             ? null
@@ -89,15 +87,72 @@ const DiscountDrawer = (props) => {
           if (!response.success) throw new Error(response.message);
           toast.success(response.message || "Created.");
         }
-        refetch && refetch();
-        onClose && onClose();
+        refetch?.();
+        onClose?.();
       } catch (error) {
-        console.log(error);
         toast.error(error.message);
       }
     },
     [discount, mutateCreate, mutateUpdate, onClose, refetch]
   );
+
+  const handleDelete = useCallback(async () => {
+    if (!discount?._id) return;
+    try {
+      const res = await mutateDelete.mutateAsync(discount._id);
+      if (!res?.success) throw new Error(res?.message || "Failed");
+      toast.success(res.message || "Deleted.");
+      refetch?.();
+      onClose?.();
+    } catch (e) {
+      toast.error(e.message);
+    }
+  }, [discount?._id, mutateDelete, onClose, refetch]);
+
+  const confirmSave = useCallback(
+    (values, dirty) => {
+      if (!dirty) return;
+      Modal.confirm({
+        title: discount ? "Save changes?" : "Create discount?",
+        content: discount
+          ? "Are you sure you want to save these changes?"
+          : "Create this discount code?",
+        okText: "Save",
+        cancelText: "Cancel",
+        onOk: () => handleSubmit(values),
+      });
+    },
+    [discount, handleSubmit]
+  );
+
+  const confirmCancel = useCallback(
+    (dirty) => {
+      if (!dirty) {
+        onClose?.();
+        return;
+      }
+      Modal.confirm({
+        title: "Discard changes?",
+        content: "You have unsaved changes. Leave without saving?",
+        okText: "Discard",
+        okButtonProps: { danger: true },
+        cancelText: "Keep editing",
+        onOk: onClose,
+      });
+    },
+    [onClose]
+  );
+
+  const confirmDelete = useCallback(() => {
+    Modal.confirm({
+      title: "Delete discount?",
+      content: `Delete code "${discount?.idDiscount || discount?.code}"? This cannot be undone.`,
+      okText: "Delete",
+      okButtonProps: { danger: true },
+      cancelText: "Cancel",
+      onOk: handleDelete,
+    });
+  }, [discount, handleDelete]);
 
   return (
     <Fragment>
@@ -117,79 +172,81 @@ const DiscountDrawer = (props) => {
         validateOnChange={false}
         validateOnMount={false}
       >
-        {(helperFormik) => {
-          return (
-            <Form>
-              <Drawer
-                title={discount ? "Edit discount" : "New discount"}
-                placement="right"
-                width={400}
-                onClose={onClose}
-                open={isOpen}
-                extra={
-                  <Space>
-                    <Button onClick={onClose}>Cancel</Button>
-                    <Button
-                      type="primary"
-                      onClick={() => handleSubmit(helperFormik.values)}
-                      disabled={!helperFormik.dirty}
-                      loading={
-                        mutateCreate.isLoading || mutateUpdate.isLoading
-                      }
-                    >
-                      Save
-                    </Button>
-                  </Space>
-                }
-              >
-                <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-                  Leave usage limit empty for unlimited redemptions (stored as{" "}
-                  <code>usage_limit</code> = null).
-                </Typography.Paragraph>
-                <Flex vertical gap="middle">
-                  <FastField
-                    component={InputCommon}
-                    title="Code (uppercase, no extra spaces)"
-                    name="discountCode"
-                    placeholder="e.g. SUMMER2026"
-                    disabled={!!discount}
-                  />
-                  <div>
-                    <div style={{ marginBottom: 6, fontWeight: 500 }}>
-                      Discount type
-                    </div>
-                    <Select
-                      style={{ width: "100%" }}
-                      options={typeOptions}
-                      value={helperFormik.values.type}
-                      onChange={(v) => helperFormik.setFieldValue("type", v)}
-                    />
+        {(helperFormik) => (
+          <Form>
+            <Drawer
+              title={discount ? "Edit discount" : "New discount"}
+              placement="right"
+              width={400}
+              onClose={() => confirmCancel(helperFormik.dirty)}
+              open={isOpen}
+              extra={
+                <Space size={6}>
+                  <Button
+                    size="small"
+                    onClick={() => confirmCancel(helperFormik.dirty)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="primary"
+                    size="small"
+                    onClick={() => confirmSave(helperFormik.values, helperFormik.dirty)}
+                    disabled={!helperFormik.dirty}
+                    loading={mutateCreate.isLoading || mutateUpdate.isLoading}
+                  >
+                    Save
+                  </Button>
+                </Space>
+              }
+            >
+              <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
+                Leave usage limit empty for unlimited redemptions (stored as{" "}
+                <code>usage_limit</code> = null).
+              </Typography.Paragraph>
+              <Flex vertical gap="middle">
+                <FastField
+                  component={InputCommon}
+                  title="Code (uppercase, no extra spaces)"
+                  name="discountCode"
+                  placeholder="e.g. SUMMER2026"
+                  disabled={!!discount}
+                />
+                <div>
+                  <div style={{ marginBottom: 6, fontWeight: 500 }}>
+                    Discount type
                   </div>
-                  <FastField
-                    component={InputCommon}
-                    title={
-                      helperFormik.values.type === "percentage"
-                        ? "Percent off"
-                        : "Amount off (VND)"
-                    }
-                    name="valueNum"
-                    placeholder={
-                      helperFormik.values.type === "percentage" ? "10" : "50000"
-                    }
-                    type="number"
+                  <Select
+                    style={{ width: "100%" }}
+                    options={typeOptions}
+                    value={helperFormik.values.type}
+                    onChange={(v) => helperFormik.setFieldValue("type", v)}
                   />
-                  <FastField
-                    component={InputCommon}
-                    title="Usage limit (optional)"
-                    name="usageLimit"
-                    placeholder="Empty = unlimited"
-                    type="number"
-                  />
-                </Flex>
-              </Drawer>
-            </Form>
-          );
-        }}
+                </div>
+                <FastField
+                  component={InputCommon}
+                  title={
+                    helperFormik.values.type === "percentage"
+                      ? "Percent off"
+                      : "Amount off (VND)"
+                  }
+                  name="valueNum"
+                  placeholder={
+                    helperFormik.values.type === "percentage" ? "10" : "50000"
+                  }
+                  type="number"
+                />
+                <FastField
+                  component={InputCommon}
+                  title="Usage limit (optional)"
+                  name="usageLimit"
+                  placeholder="Empty = unlimited"
+                  type="number"
+                />
+              </Flex>
+            </Drawer>
+          </Form>
+        )}
       </Formik>
     </Fragment>
   );

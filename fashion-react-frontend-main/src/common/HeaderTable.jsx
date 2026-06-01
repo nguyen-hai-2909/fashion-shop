@@ -13,6 +13,14 @@ const deleteLabels = {
     title: "Delete discount codes",
     body: "Delete the selected discount codes?",
   },
+  category: {
+    title: "Delete categories",
+    body: "Delete the selected categories? This cannot be undone.",
+  },
+  staff: {
+    title: "Delete staff accounts",
+    body: "Delete the selected staff accounts? This cannot be undone.",
+  },
   default: {
     title: "Confirm delete",
     body: "Delete the selected items?",
