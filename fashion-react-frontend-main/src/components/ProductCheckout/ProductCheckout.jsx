@@ -111,9 +111,10 @@ const ProductCheckout = (props) => {
             onSubmit={handleSubmitDiscount}
           >
             {({ handleSubmit }) => (
-              <div className="form-discount" style={{ marginBottom: "4px" }}>
+              <div className="form-discount checkout-discount">
                 <FastField
                   name="discountCode"
+                  className="checkout-discount__input"
                   placeholder="Enter discount code..."
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -124,8 +125,7 @@ const ProductCheckout = (props) => {
                 />
                 <button
                   type="button"
-                  className="btn"
-                  style={{ marginTop: "8px", padding: "8px 12px", width: "100%" }}
+                  className="btn btn-checkout-discount"
                   onClick={() => handleSubmit()}
                 >
                   Apply code

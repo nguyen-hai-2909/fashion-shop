@@ -65,7 +65,7 @@ const FilterProductsPage = (props) => {
               value={query?.company}
               onChange={handleChangeQuery}
             >
-              <option value="all">{copy.all}</option>
+              <option value="">{copy.all}</option>
               {companyList &&
                 companyList.map((item, index) => (
                   <option key={index} value={item?.value}>

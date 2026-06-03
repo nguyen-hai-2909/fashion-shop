@@ -35,17 +35,15 @@ const ProductsPage = () => {
     price: query.price,
   });
   //! Function
-  const handleChangeQuery = useCallback(
-    (e) => {
-      setQuery((prev) => {
-        return {
-          ...prev,
-          [e.target.name]: e.target.value,
-        };
-      });
-    },
-    [query]
-  );
+  const handleChangeQuery = useCallback((e) => {
+    const { name, value } = e.target;
+    const nextValue =
+      name === "company" && (value === "all" || value === "All") ? "" : value;
+    setQuery((prev) => ({
+      ...prev,
+      [name]: nextValue,
+    }));
+  }, []);
   const handleClearFilter = useCallback(() => {
     setQuery((prev) => {
       return {

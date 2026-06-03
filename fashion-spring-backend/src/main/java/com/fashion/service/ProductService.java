@@ -163,7 +163,7 @@ public class ProductService {
                 list = list.stream().filter(p -> category.equals(p.getCategory())).collect(Collectors.toCollection(ArrayList::new));
             }
             String brandQ = brand != null && !brand.isBlank() ? brand : company;
-            if (brandQ != null && !brandQ.isBlank()) {
+            if (brandQ != null && !brandQ.isBlank() && !"all".equalsIgnoreCase(brandQ.trim())) {
                 String b = brandQ.toLowerCase();
                 list = list.stream()
                         .filter(p -> p.getBrand() != null && p.getBrand().toLowerCase().contains(b))
