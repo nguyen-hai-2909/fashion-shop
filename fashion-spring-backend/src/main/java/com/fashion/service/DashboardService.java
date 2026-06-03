@@ -22,7 +22,9 @@ public class DashboardService {
     private final FashionDiscountRepository discountRepository;
 
     public Map<String, Object> getDashboard() {
-        long countOrder = orderRepository.count();
+        long countOrder = orderRepository.findAll().stream()
+                .filter(this::countsInStatistics)
+                .count();
         long countProduct = productRepository.count();
         long countUser = userRepository.findAll().stream().filter(u -> !"admin".equalsIgnoreCase(u.getRole())).count();
         long discountCount = discountRepository.count();
@@ -47,15 +49,18 @@ public class DashboardService {
         );
     }
 
-    private boolean countsTowardRevenue(Order o) {
+    private boolean countsInStatistics(Order o) {
         return o != null && !"cancelled".equalsIgnoreCase(o.getStatus());
     }
 
     private List<Map<String, Object>> aggregateByDay(List<Order> orders) {
         Map<String, Map<String, Object>> byDay = new LinkedHashMap<>();
         for (Order o : orders) {
+            if (!countsInStatistics(o)) {
+                continue;
+            }
             String date = o.getCreatedAt().toString().substring(0, 10);
-            double orderTotal = countsTowardRevenue(o) && o.getTotal() != null ? o.getTotal() : 0;
+            double orderTotal = o.getTotal() != null ? o.getTotal() : 0;
             byDay.compute(date, (k, v) -> {
                 if (v == null) {
                     Map<String, Object> m = new HashMap<>();
