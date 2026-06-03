@@ -143,6 +143,9 @@ public class UserService {
         if (!PasswordMatch.matches(passwordEncoder, body.get("password"), user.getPassword())) {
             return Map.of("success", false, "message", "Password is not true!");
         }
+        if (Boolean.TRUE.equals(user.getLocked())) {
+            return Map.of("success", false, "message", "Account is locked");
+        }
         if (user.getId() == null || user.getId().isBlank()) {
             return Map.of("success", false, "message", "Account misconfigured");
         }
@@ -288,6 +291,9 @@ public class UserService {
         } else {
             if (!isCustomerRole(user.getRole())) {
                 return Map.of("success", false, "message", "user is not exist!!!");
+            }
+            if (Boolean.TRUE.equals(user.getLocked())) {
+                return Map.of("success", false, "message", "Account is locked");
             }
             boolean changed = false;
             if (user.getGoogleId() == null && googleSub != null) {

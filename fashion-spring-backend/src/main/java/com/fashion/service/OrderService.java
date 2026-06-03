@@ -68,6 +68,9 @@ public class OrderService {
             if (user == null) {
                 return Map.of("success", false, "message", "User not found");
             }
+            if (Boolean.TRUE.equals(user.getLocked())) {
+                return Map.of("success", false, "message", "Account is locked");
+            }
             List<Map<String, Object>> cart = objectMapper.readValue(form.get("products"), new TypeReference<>() {
             });
 

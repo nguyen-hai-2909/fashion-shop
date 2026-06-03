@@ -1,11 +1,14 @@
 package com.fashion.security;
 
+import com.fashion.document.User;
+import com.fashion.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,6 +29,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private static final AntPathMatcher MATCHER = new AntPathMatcher();
 
     private final JwtService jwtService;
+    private final UserRepository userRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final List<PathRule> PUBLIC = List.of(
@@ -89,6 +93,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
             if (email != null && !email.isBlank()) {
                 details.put("email", email);
+            }
+            if (id != null && !id.isBlank()) {
+                User user = userRepository.findById(id).orElse(null);
+                if (user != null && Boolean.TRUE.equals(user.getLocked())) {
+                    writeJsonError(response, HttpStatus.FORBIDDEN.value(), "Account is locked");
+                    return;
+                }
             }
             String principal = (id != null && !id.isBlank()) ? id : email;
             var auth = new UsernamePasswordAuthenticationToken(principal, null, List.of());

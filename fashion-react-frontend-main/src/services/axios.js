@@ -12,8 +12,20 @@ instance.interceptors.response.use(
     return response?.data;
   },
   function (error) {
+    const data = error?.response?.data;
+    const msg = String(data?.message || "");
+    if (
+      error?.response?.status === 403 &&
+      msg.toLowerCase().includes("locked")
+    ) {
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      if (!window.location.pathname.startsWith("/login")) {
+        window.location.replace("/login");
+      }
+    }
     return (
-      error?.response?.data ?? {
+      data ?? {
         success: false,
         message: error?.message || "Network error",
       }
