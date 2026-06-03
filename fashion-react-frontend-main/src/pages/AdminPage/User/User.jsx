@@ -6,9 +6,11 @@ import Paper from "../../../common/Paper";
 import { GetUserAdminService } from "../../../services/AdminService";
 import UserList from "./UserList/UserList";
 import { adminContext } from "../../../context/AdminContext";
+import { canWriteAdminData } from "../../../utils/adminPermission";
 
 const User = () => {
-  const { tokenAdmin, dispatch } = useContext(adminContext);
+  const { admin, tokenAdmin, dispatch } = useContext(adminContext);
+  const canWrite = canWriteAdminData(admin?.role);
 
   const [data, setData] = useState([]);
   const [query, setQuery] = useState({
@@ -65,6 +67,7 @@ const User = () => {
           query={query}
           setQuery={setQuery}
           tokenAdmin={tokenAdmin}
+          canWrite={canWrite}
           onRefetch={refetch}
         />
       </Paper>

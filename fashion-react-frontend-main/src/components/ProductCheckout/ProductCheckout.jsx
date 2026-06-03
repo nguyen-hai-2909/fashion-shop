@@ -1,7 +1,11 @@
 /* eslint-disable react/prop-types */
-import { useContext } from "react";
+import { useCallback, useContext } from "react";
+import { FastField, Formik } from "formik";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "react-toastify";
 import { cartContext } from "../../context/CartContext";
 import { discountContext } from "../../context/DiscountContext";
+import { CheckDiscountService } from "../../services/DiscountService";
 import {
   cartImageUrl,
   displayColorLabel,
@@ -16,14 +20,46 @@ import { Flex } from "antd";
 
 const ProductCheckout = (props) => {
   const { products: cartProducts } = useContext(cartContext);
-  const { discountCode: discountCodeCtx, value: valueDiscountCtx } = useContext(discountContext);
+  const {
+    discountCode: discountCodeCtx,
+    value: valueDiscountCtx,
+    dispatch: dispatchDiscount,
+  } = useContext(discountContext);
   //! Props
   const { isLoading, products: productsProp, discountCode: discountCodeProp, valueDiscount: valueDiscountProp } = props;
   const products = productsProp ?? cartProducts;
 
-  // Prefer explicitly passed values (e.g. Buy Now suppresses cart discount)
   const discountCode = discountCodeProp !== undefined ? discountCodeProp : discountCodeCtx;
   const valueDiscount = valueDiscountProp !== undefined ? valueDiscountProp : valueDiscountCtx;
+
+  const mutateDiscount = useMutation({
+    mutationFn: (discount) => CheckDiscountService(discount),
+  });
+
+  const handleSubmitDiscount = useCallback(
+    async (values) => {
+      try {
+        const response = await mutateDiscount.mutateAsync({
+          discountCode: values.discountCode,
+        });
+        const { success, message } = response;
+        if (!success) {
+          throw new Error(message);
+        }
+        toast.success(message);
+        dispatchDiscount({
+          type: "ADD_DISCOUNT",
+          payload: {
+            discountCode: response?.discount.idDiscount,
+            value: response?.discount.valueDiscount,
+          },
+        });
+      } catch (error) {
+        toast.error(error.message);
+      }
+    },
+    [dispatchDiscount, mutateDiscount]
+  );
   //! State
 
   //! Function
@@ -69,6 +105,34 @@ const ProductCheckout = (props) => {
             <span>Subtotal</span>
             <span>{formatCurrency(handleRenderSubtotalCart(products))}</span>
           </div>
+          <Formik
+            initialValues={{ discountCode: discountCode ?? "" }}
+            enableReinitialize
+            onSubmit={handleSubmitDiscount}
+          >
+            {({ handleSubmit }) => (
+              <div className="form-discount" style={{ marginBottom: "4px" }}>
+                <FastField
+                  name="discountCode"
+                  placeholder="Enter discount code..."
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleSubmit();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn"
+                  style={{ marginTop: "8px", padding: "8px 12px", width: "100%" }}
+                  onClick={() => handleSubmit()}
+                >
+                  Apply code
+                </button>
+              </div>
+            )}
+          </Formik>
           <div className="checkout-content-product-total_item">
             <span style={{ fontWeight: "400" }}>Discount code</span>
             <span style={{ fontWeight: "400" }}>{discountCode ?? ""}</span>

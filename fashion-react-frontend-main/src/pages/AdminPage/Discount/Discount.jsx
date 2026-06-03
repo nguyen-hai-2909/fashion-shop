@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useContext, useState } from "react";
 import { adminContext } from "../../../context/AdminContext";
+import { canWriteAdminData } from "../../../utils/adminPermission";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   DeleteMultiDiscountService,
@@ -12,7 +13,8 @@ import DiscountList from "./DiscountList/DiscountList";
 import { toast } from "react-toastify";
 
 const Discount = () => {
-  const { tokenAdmin, dispatch } = useContext(adminContext);
+  const { admin, tokenAdmin, dispatch } = useContext(adminContext);
+  const canWrite = canWriteAdminData(admin?.role);
 
   const [discountValue, setDiscountValue] = useState(null);
   const [isOpenDrawer, setIsOpenDrawer] = useState(false);
@@ -79,8 +81,8 @@ const Discount = () => {
       <HeaderTable
         title="Discount codes"
         deleteEntity="discount"
-        isCreate={true}
-        isDelete={true}
+        isCreate={canWrite}
+        isDelete={canWrite}
         selectedRowKeys={selectedRowKeys}
         onRefetch={refetch}
         onCreate={() => {
@@ -116,6 +118,7 @@ const Discount = () => {
           isOpenDrawer={isOpenDrawer}
           setIsOpenDrawer={setIsOpenDrawer}
           refetch={refetch}
+          canWrite={canWrite}
         />
       </Paper>
     </Fragment>

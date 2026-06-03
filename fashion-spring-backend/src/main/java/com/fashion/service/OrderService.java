@@ -11,6 +11,7 @@ import com.fashion.repository.OrderRepository;
 import com.fashion.repository.ProductRepository;
 import com.fashion.repository.UserRepository;
 import com.fashion.security.JwtService;
+import com.fashion.util.ShippingUtil;
 import lombok.RequiredArgsConstructor;
 import org.bson.Document;
 import org.springframework.data.domain.PageRequest;
@@ -124,7 +125,7 @@ public class OrderService {
                 decInventory(product.getId(), variant.getId(), useQty);
             }
 
-            double shippingFee = Double.parseDouble(form.getOrDefault("shippingFee", "0"));
+            double shippingFee = ShippingUtil.calculateShippingFee(subtotal);
             String code = form.get("discountCode");
             FashionDiscount disc = null;
             if (code != null && !code.isBlank()) {

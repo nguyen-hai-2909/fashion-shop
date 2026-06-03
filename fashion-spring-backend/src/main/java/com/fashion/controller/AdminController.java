@@ -1,5 +1,6 @@
 package com.fashion.controller;
 
+import com.fashion.service.AdminAuthorizationService;
 import com.fashion.service.AdminService;
 import com.fashion.service.ProductService;
 import com.fashion.util.AuthUtil;
@@ -19,6 +20,7 @@ public class AdminController {
 
     private final AdminService adminService;
     private final ProductService productService;
+    private final AdminAuthorizationService adminAuthorizationService;
 
     @PostMapping
     public ResponseEntity<?> create(@RequestBody Map<String, Object> body) {
@@ -67,12 +69,22 @@ public class AdminController {
 
     @PatchMapping("/user/{id}")
     public ResponseEntity<?> updateUser(@PathVariable String id, @RequestBody Map<String, Object> body) {
-        return ResponseEntity.ok(adminService.updateUser(id, body));
+        try {
+            adminAuthorizationService.requireAdminOrManager();
+            return ResponseEntity.ok(adminService.updateUser(id, body));
+        } catch (IllegalStateException e) {
+            return forbidden(e.getMessage());
+        }
     }
 
     @DeleteMapping("/user/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable String id) {
-        return ResponseEntity.ok(adminService.deleteUser(id));
+        try {
+            adminAuthorizationService.requireAdminOrManager();
+            return ResponseEntity.ok(adminService.deleteUser(id));
+        } catch (IllegalStateException e) {
+            return forbidden(e.getMessage());
+        }
     }
 
     @GetMapping("/order")
@@ -111,7 +123,12 @@ public class AdminController {
 
     @DeleteMapping("/reviews/{orderId}/{itemIndex}")
     public ResponseEntity<?> deleteReview(@PathVariable String orderId, @PathVariable int itemIndex) {
-        return ResponseEntity.ok(adminService.deleteReview(orderId, itemIndex));
+        try {
+            adminAuthorizationService.requireAdminOrManager();
+            return ResponseEntity.ok(adminService.deleteReview(orderId, itemIndex));
+        } catch (IllegalStateException e) {
+            return forbidden(e.getMessage());
+        }
     }
 
     @GetMapping("/staff")

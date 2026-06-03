@@ -12,7 +12,7 @@ import { DeleteOutlined, LockOutlined, SettingOutlined, UnlockOutlined } from "@
 import CustomerDrawer from "../CustomerDrawer/CustomerDrawer";
 
 const UserList = (props) => {
-  const { isLoading, data, query, setQuery, tokenAdmin, onRefetch } = props;
+  const { isLoading, data, query, setQuery, tokenAdmin, canWrite = true, onRefetch } = props;
 
   const [editTarget, setEditTarget] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -127,6 +127,7 @@ const UserList = (props) => {
       width: 130,
       render: (_, record) => {
         const locked = Boolean(record.locked);
+        if (!canWrite) return "—";
         return (
           <div style={{ display: "flex", gap: 6 }}>
             <Tooltip title="Edit customer">

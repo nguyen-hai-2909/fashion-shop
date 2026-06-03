@@ -19,6 +19,7 @@ const CategoryList = ({
   refetch,
   selectedRowKeys,
   setSelectedRowKeys,
+  canWrite = true,
 }) => {
   const { tokenAdmin } = useContext(adminContext);
 
@@ -56,7 +57,9 @@ const CategoryList = ({
         <Switch
           checked={row?.isActive !== false}
           loading={toggleMut.isLoading}
+          disabled={!canWrite}
           onChange={async () => {
+            if (!canWrite) return;
             const res = await toggleMut.mutateAsync(row._id);
             if (res?.success) refetch?.();
           }}
@@ -68,17 +71,20 @@ const CategoryList = ({
       dataIndex: "_id",
       align: "center",
       width: 100,
-      render: (_, item) => (
-        <Button
-          type="primary"
-          ghost
-          icon={<SettingOutlined />}
-          onClick={() => {
-            setCategoryValue(item);
-            setIsOpenDrawer(true);
-          }}
-        />
-      ),
+      render: (_, item) =>
+        canWrite ? (
+          <Button
+            type="primary"
+            ghost
+            icon={<SettingOutlined />}
+            onClick={() => {
+              setCategoryValue(item);
+              setIsOpenDrawer(true);
+            }}
+          />
+        ) : (
+          "—"
+        ),
     },
   ];
 

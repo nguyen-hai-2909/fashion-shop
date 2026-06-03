@@ -4,6 +4,7 @@ import { Fragment, useContext, useMemo, useState } from "react";
 import HeaderTable from "../../../common/HeaderTable";
 import Paper from "../../../common/Paper";
 import { adminContext } from "../../../context/AdminContext";
+import { canWriteAdminData } from "../../../utils/adminPermission";
 import {
   DeleteReviewAdminService,
   GetReviewsAdminService,
@@ -25,7 +26,8 @@ const formatDateTime = (iso) => {
 };
 
 const Review = () => {
-  const { tokenAdmin } = useContext(adminContext);
+  const { admin, tokenAdmin } = useContext(adminContext);
+  const canWrite = canWriteAdminData(admin?.role);
   const [q, setQ] = useState("");
   const [rating, setRating] = useState(undefined);
   const [sortDir, setSortDir] = useState("desc");
@@ -56,34 +58,38 @@ const Review = () => {
       width: 180,
       render: (_) => formatDateTime(_),
     },
-    {
-      title: "Action",
-      width: 120,
-      render: (_, row) => (
-        <Popconfirm
-          title="Remove this review?"
-          description="Clears rating and comment for this line item (same as legacy admin)."
-          okText="Remove"
-          cancelText="Cancel"
-          onConfirm={async () => {
-            const res = await delMut.mutateAsync({
-              orderId: row.orderId,
-              itemIndex: row.itemIndex,
-            });
-            if (res?.success) {
-              toast.success(res.message);
-              refetch();
-            } else {
-              toast.error(res?.message || "Could not delete review");
-            }
-          }}
-        >
-          <Button danger loading={delMut.isLoading}>
-            Delete
-          </Button>
-        </Popconfirm>
-      ),
-    },
+    ...(canWrite
+      ? [
+          {
+            title: "Action",
+            width: 120,
+            render: (_, row) => (
+              <Popconfirm
+                title="Remove this review?"
+                description="Clears rating and comment for this line item (same as legacy admin)."
+                okText="Remove"
+                cancelText="Cancel"
+                onConfirm={async () => {
+                  const res = await delMut.mutateAsync({
+                    orderId: row.orderId,
+                    itemIndex: row.itemIndex,
+                  });
+                  if (res?.success) {
+                    toast.success(res.message);
+                    refetch();
+                  } else {
+                    toast.error(res?.message || "Could not delete review");
+                  }
+                }}
+              >
+                <Button danger loading={delMut.isLoading}>
+                  Delete
+                </Button>
+              </Popconfirm>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (

@@ -59,12 +59,12 @@ export const renderTotalAmountCartProducts = (products) => {
   return products ? total : 0;
 };
 
+export const FREE_SHIPPING_THRESHOLD = 1999000;
+export const STANDARD_SHIPPING_FEE = 50000;
+
 export const renderShippingFee = (products) => {
-  if (handleRenderSubtotalCart(products) > 3000000) {
-    return 0;
-  } else {
-    return 500000;
-  }
+  const subtotal = handleRenderSubtotalCart(products);
+  return subtotal > FREE_SHIPPING_THRESHOLD ? 0 : STANDARD_SHIPPING_FEE;
 };
 
 /** Cart / checkout: color may be a string (hex or name) or legacy nested object. */

@@ -4,13 +4,15 @@ import { Fragment, useCallback, useContext, useMemo, useState } from "react";
 import HeaderTable from "../../../common/HeaderTable";
 import Paper from "../../../common/Paper";
 import { adminContext } from "../../../context/AdminContext";
+import { canWriteAdminData } from "../../../utils/adminPermission";
 import { DeleteCategoryService, GetCategoriesService } from "../../../services/CategoryService";
 import CategoryList from "./CategoryList/CategoryList";
 import { toast } from "react-toastify";
 import { useMutation } from "@tanstack/react-query";
 
 const Category = () => {
-  const { tokenAdmin } = useContext(adminContext);
+  const { admin, tokenAdmin } = useContext(adminContext);
+  const canWrite = canWriteAdminData(admin?.role);
   const [q, setQ] = useState("");
   const [categoryValue, setCategoryValue] = useState(null);
   const [isOpenDrawer, setIsOpenDrawer] = useState(false);
@@ -58,8 +60,8 @@ const Category = () => {
     <Fragment>
       <HeaderTable
         title="Categories"
-        isCreate={true}
-        isDelete={true}
+        isCreate={canWrite}
+        isDelete={canWrite}
         onCreate={() => {
           setCategoryValue(null);
           setIsOpenDrawer(true);
@@ -94,6 +96,7 @@ const Category = () => {
           refetch={refetch}
           selectedRowKeys={selectedRowKeys}
           setSelectedRowKeys={setSelectedRowKeys}
+          canWrite={canWrite}
         />
       </Paper>
     </Fragment>

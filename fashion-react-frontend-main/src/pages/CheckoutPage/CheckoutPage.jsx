@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useContext, useMemo } from "react";
+import { Fragment, useCallback, useContext, useEffect, useMemo } from "react";
 import "./CheckoutPage.scss";
 import HeaderCart from "../../components/Header/HeaderCart";
 import FormCheckout from "../../components/FormCheckout/FormCheckout";
@@ -33,9 +33,14 @@ const CheckoutPage = () => {
     dispatch: dispatchDiscount,
   } = useContext(discountContext);
 
-  // Buy Now skips any discount previously applied to the cart
-  const discountCode = buyNow ? null : discountCodeCtx;
-  const valueDiscount = buyNow ? 0 : valueDiscountCtx;
+  const discountCode = discountCodeCtx;
+  const valueDiscount = valueDiscountCtx;
+
+  useEffect(() => {
+    if (buyNow) {
+      dispatchDiscount({ type: "CLEAR_DISCOUNT" });
+    }
+  }, [buyNow, dispatchDiscount]);
   //! Props
 
   //! State

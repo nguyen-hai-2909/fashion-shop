@@ -8,6 +8,7 @@ import com.fashion.repository.ProductRepository;
 import com.fashion.repository.UserRepository;
 import com.fashion.security.JwtService;
 import com.fashion.security.PasswordMatch;
+import com.fashion.util.AdminRoleUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -154,13 +155,7 @@ public class AdminService {
     }
 
     private void requireStaffManagement(User actor) {
-        String role = normalizeRole(actor.getRole());
-        if ("staff".equals(role)) {
-            throw new IllegalStateException("You do not have permission to manage staff");
-        }
-        if (!"admin".equals(role) && !"manager".equals(role)) {
-            throw new IllegalStateException("Unauthorized");
-        }
+        AdminRoleUtil.requireAdmin(actor);
     }
 
     private static String normalizeRole(String role) {

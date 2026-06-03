@@ -19,6 +19,7 @@ const DiscountList = (props) => {
     setIsOpenDrawer,
     isOpenDrawer,
     refetch,
+    canWrite = true,
   } = props;
 
   const hi = (text) => {
@@ -94,17 +95,20 @@ const DiscountList = (props) => {
       dataIndex: "_id",
       align: "center",
       width: 100,
-      render: (_, item) => (
-        <Button
-          type="primary"
-          ghost
-          icon={<SettingOutlined />}
-          onClick={() => {
-            setIsOpenDrawer(true);
-            setDiscountValue(item);
-          }}
-        />
-      ),
+      render: (_, item) =>
+        canWrite ? (
+          <Button
+            type="primary"
+            ghost
+            icon={<SettingOutlined />}
+            onClick={() => {
+              setIsOpenDrawer(true);
+              setDiscountValue(item);
+            }}
+          />
+        ) : (
+          "—"
+        ),
     },
   ];
 

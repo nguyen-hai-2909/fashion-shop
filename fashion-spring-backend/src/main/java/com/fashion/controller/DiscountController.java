@@ -1,5 +1,6 @@
 package com.fashion.controller;
 
+import com.fashion.service.AdminAuthorizationService;
 import com.fashion.service.DiscountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ import java.util.Map;
 public class DiscountController {
 
     private final DiscountService discountService;
+    private final AdminAuthorizationService adminAuthorizationService;
 
     @GetMapping
     public ResponseEntity<?> list(
@@ -65,16 +67,35 @@ public class DiscountController {
 
     @PostMapping
     public ResponseEntity<?> create(@RequestBody Map<String, Object> body) {
-        return ResponseEntity.ok(discountService.create(body));
+        try {
+            adminAuthorizationService.requireAdminOrManager();
+            return ResponseEntity.ok(discountService.create(body));
+        } catch (IllegalStateException e) {
+            return forbidden(e.getMessage());
+        }
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable String id, @RequestBody Map<String, Object> body) {
-        return ResponseEntity.ok(discountService.update(id, body));
+        try {
+            adminAuthorizationService.requireAdminOrManager();
+            return ResponseEntity.ok(discountService.update(id, body));
+        } catch (IllegalStateException e) {
+            return forbidden(e.getMessage());
+        }
     }
 
     @DeleteMapping("/multi")
     public ResponseEntity<?> deleteMulti(@RequestParam(value = "ids[]") List<String> ids) {
-        return ResponseEntity.ok(discountService.deleteMulti(ids));
+        try {
+            adminAuthorizationService.requireAdminOrManager();
+            return ResponseEntity.ok(discountService.deleteMulti(ids));
+        } catch (IllegalStateException e) {
+            return forbidden(e.getMessage());
+        }
+    }
+
+    private ResponseEntity<Map<String, Object>> forbidden(String message) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("success", false, "message", message));
     }
 }

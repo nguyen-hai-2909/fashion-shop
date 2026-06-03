@@ -20,6 +20,7 @@ const ProductList = (props) => {
     selectedRowKeys,
     setSelectedRowKeys,
     tokenAdmin,
+    canWrite = true,
     onToggleVisibility,
   } = props;
   //! State
@@ -204,7 +205,9 @@ const ProductList = (props) => {
         <Switch
           checked={String(row?.status || "").toLowerCase() === "active"}
           loading={toggleBusyId === row._id}
+          disabled={!canWrite}
           onChange={async () => {
+            if (!canWrite) return;
             if (!tokenAdmin) return;
             setToggleBusyId(row._id);
             try {
@@ -232,6 +235,7 @@ const ProductList = (props) => {
       align: "center",
       width: 100,
       render: (id) => {
+        if (!canWrite) return "—";
         return (
           <Flex align="center" justify="center">
             <Button

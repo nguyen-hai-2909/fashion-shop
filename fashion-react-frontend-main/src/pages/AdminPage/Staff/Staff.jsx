@@ -4,6 +4,7 @@ import { Fragment, useCallback, useContext, useState } from "react";
 import HeaderTable from "../../../common/HeaderTable";
 import Paper from "../../../common/Paper";
 import { adminContext } from "../../../context/AdminContext";
+import { canManageStaff } from "../../../utils/adminPermission";
 import {
   DeleteStaffAdminService,
   GetStaffAdminService,
@@ -12,7 +13,8 @@ import StaffList from "./StaffList/StaffList";
 import { showToast } from "../../../utils/showToast";
 
 const Staff = () => {
-  const { tokenAdmin } = useContext(adminContext);
+  const { admin, tokenAdmin } = useContext(adminContext);
+  const canWrite = canManageStaff(admin?.role);
   const [q, setQ] = useState("");
   const [staffValue, setStaffValue] = useState(null);
   const [isOpenDrawer, setIsOpenDrawer] = useState(false);
@@ -51,8 +53,8 @@ const Staff = () => {
     <Fragment>
       <HeaderTable
         title="Staff management"
-        isCreate={true}
-        isDelete={true}
+        isCreate={canWrite}
+        isDelete={canWrite}
         onCreate={() => {
           setStaffValue(null);
           setIsOpenDrawer(true);

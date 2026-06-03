@@ -6,12 +6,14 @@ import Paper from "../../../common/Paper";
 import ProductList from "./ProductList/ProductList";
 import HeaderTable from "../../../common/HeaderTable";
 import { adminContext } from "../../../context/AdminContext";
+import { canWriteAdminData } from "../../../utils/adminPermission";
 import { useNavigate } from "react-router-dom";
 import { RemoveProductService } from "../../../services/ProductService";
 import { toast } from "react-toastify";
 const Product = () => {
   const navigate = useNavigate();
-  const { dispatch, tokenAdmin } = useContext(adminContext);
+  const { admin, dispatch, tokenAdmin } = useContext(adminContext);
+  const canWrite = canWriteAdminData(admin?.role);
   //! Props
 
   //! State
@@ -91,8 +93,8 @@ const Product = () => {
       <HeaderTable
         title="Products"
         deleteEntity="product"
-        isCreate={true}
-        isDelete={true}
+        isCreate={canWrite}
+        isDelete={canWrite}
         selectedRowKeys={selectedRowKeys}
         onRefetch={refetch}
         onCreate={() => {
@@ -126,6 +128,7 @@ const Product = () => {
           selectedRowKeys={selectedRowKeys}
           setSelectedRowKeys={setSelectedRowKeys}
           tokenAdmin={tokenAdmin}
+          canWrite={canWrite}
           onToggleVisibility={refetch}
         />
       </Paper>
