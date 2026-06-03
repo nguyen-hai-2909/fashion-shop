@@ -212,7 +212,7 @@ const Analytic = () => {
               <Col span={8}>
                 <Card>
                   <Statistic
-                    title="Customers (range)"
+                    title="Customers"
                     value={countData?.users}
                     valueStyle={{ color: "#3f8600" }}
                     prefix={<ArrowUpOutlined />}

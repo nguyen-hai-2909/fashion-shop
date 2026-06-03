@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { Fragment, useCallback, useContext, useMemo } from "react";
-import { FastField, Form, Formik } from "formik";
+import { FastField, Field, Form, Formik } from "formik";
 import { Button, Drawer, Flex, Modal, Select, Space, Typography } from "antd";
 import InputCommon from "../../../../common/Input/InputCommon";
 import { useMutation } from "@tanstack/react-query";
@@ -219,7 +219,7 @@ const DiscountDrawer = (props) => {
                     onChange={(v) => helperFormik.setFieldValue("type", v)}
                   />
                 </div>
-                <FastField
+                <Field
                   component={InputCommon}
                   title={
                     helperFormik.values.type === "percentage"
