@@ -6,7 +6,8 @@ import {
   GetOrderReviewItemService,
   SubmitOrderReviewService,
 } from "../../services/ReviewService";
-import { cartImageUrl } from "../../utils";
+import { cartImageUrl, formatVariantTitle } from "../../utils";
+import { uploadImage } from "../../services/UploadService";
 import { showToast } from "../../utils/showToast";
 import "./OrderReviewPage.scss";
 
@@ -16,6 +17,8 @@ const OrderReviewPage = () => {
   const { token } = useContext(authContext);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [reviewImages, setReviewImages] = useState([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const { data: reviewRes, isLoading, refetch } = useQuery({
     queryKey: ["order-review-item", orderId, itemIndex, token],
@@ -25,6 +28,9 @@ const OrderReviewPage = () => {
       if (res?.success && res?.data) {
         setRating(res.data.rating > 0 ? res.data.rating : 5);
         setComment(res.data.comment || "");
+        setReviewImages(
+          Array.isArray(res.data.reviewImages) ? res.data.reviewImages : []
+        );
       }
     },
   });
@@ -41,7 +47,11 @@ const OrderReviewPage = () => {
     async (e) => {
       e.preventDefault();
       if (!canReview) return;
-      const res = await mutateReview.mutateAsync({ rating, comment });
+      const res = await mutateReview.mutateAsync({
+        rating,
+        comment,
+        reviewImages,
+      });
       if (!res?.success) {
         showToast.error(res?.message || "Review failed");
         return;
@@ -50,7 +60,26 @@ const OrderReviewPage = () => {
       refetch();
       navigate(`/order/${orderId}/review`, { replace: true });
     },
-    [canReview, comment, itemIndex, mutateReview, navigate, orderId, rating, refetch]
+    [canReview, comment, itemIndex, mutateReview, navigate, orderId, rating, refetch, reviewImages]
+  );
+
+  const handleImagePick = useCallback(
+    async (e) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file || reviewImages.length >= 5) return;
+      setUploadingImage(true);
+      try {
+        const res = await uploadImage(file, token);
+        setReviewImages((prev) => [...prev, res.url]);
+        showToast.success("Image added");
+      } catch (err) {
+        showToast.error(err.message || "Upload failed");
+      } finally {
+        setUploadingImage(false);
+      }
+    },
+    [reviewImages.length, token]
   );
 
   if (!token) {
@@ -89,7 +118,9 @@ const OrderReviewPage = () => {
             <div>
               <h2>{item?.productName}</h2>
               {item?.variantTitle ? (
-                <p style={{ color: "#888", margin: 0 }}>{item.variantTitle}</p>
+                <p style={{ color: "#888", margin: 0 }}>
+                  {formatVariantTitle(item.variantTitle)}
+                </p>
               ) : null}
               <p style={{ color: "#888", margin: "8px 0 0" }}>
                 Order #{item?.orderNumber || orderId}
@@ -100,7 +131,7 @@ const OrderReviewPage = () => {
           {!canReview ? (
             <Fragment>
               <p className="order-review-page__hint">
-                Reviews open when your order is confirmed or delivered.
+                Reviews are only available after your order is delivered.
               </p>
               <Link to={`/user/order/${orderId}`} className="btn">
                 View order
@@ -131,6 +162,39 @@ const OrderReviewPage = () => {
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Share your experience with this product..."
               />
+              <div className="order-review-page__photos">
+                <label className="order-review-page__photos-label">
+                  Photos (optional, max 5)
+                </label>
+                <div className="order-review-page__photos-grid">
+                  {reviewImages.map((url, i) => (
+                    <div key={url} className="order-review-page__photo-wrap">
+                      <img src={cartImageUrl({ url })} alt="" />
+                      <button
+                        type="button"
+                        className="order-review-page__photo-remove"
+                        onClick={() =>
+                          setReviewImages((prev) => prev.filter((_, j) => j !== i))
+                        }
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  {reviewImages.length < 5 && (
+                    <label className="order-review-page__photo-add">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        hidden
+                        onChange={handleImagePick}
+                        disabled={uploadingImage}
+                      />
+                      {uploadingImage ? "…" : "+"}
+                    </label>
+                  )}
+                </div>
+              </div>
               <button
                 type="submit"
                 className="btn"

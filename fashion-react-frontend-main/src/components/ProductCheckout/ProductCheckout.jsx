@@ -8,13 +8,12 @@ import { discountContext } from "../../context/DiscountContext";
 import { CheckDiscountService } from "../../services/DiscountService";
 import {
   cartImageUrl,
-  displayColorLabel,
+  colorLabelFromValue,
   formatCurrency,
   handleRenderSubtotalCart,
   handleRenderTotalDiscount,
   renderShippingFee,
 } from "../../utils";
-import { colorsList } from "../../constants";
 import HashLoader from "react-spinners/HashLoader";
 import { Flex } from "antd";
 
@@ -85,11 +84,7 @@ const ProductCheckout = (props) => {
               </div>
               <div className="checkout-content-product_item-info">
                 <span className="title">{el?.name}</span>
-                <span>
-                  color:{" "}
-                  {colorsList.find((c) => c.value === el?.color)?.label ??
-                    displayColorLabel(el?.color)}
-                </span>
+                <span>color: {colorLabelFromValue(el?.color)}</span>
                 <span>amount: {el?.amount}</span>
                 <span>price: {formatCurrency(el?.price)}</span>
               </div>

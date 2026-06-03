@@ -449,6 +449,52 @@ nav {
 .section-center h3 a:hover {
   color: var(--clr-primary-1);
 }
+
+.product-reviews__title {
+  margin-bottom: 1.5rem;
+}
+
+.product-reviews__empty {
+  margin-top: 0;
+}
+
+.product-reviews__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 1.25rem 0;
+  border-top: 1px solid var(--clr-grey-9);
+}
+
+.product-reviews__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+}
+
+.product-reviews__photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.product-reviews__photos a {
+  display: block;
+  width: 64px;
+  height: 64px;
+}
+
+.product-reviews__photos img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--clr-grey-9);
+}
+
 /* about */
 .page {
   min-height: calc(80vh - 10rem);
@@ -1155,16 +1201,26 @@ hr {
 }
 .products-container-column .featured {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: minmax(220px, 280px) 1fr;
   column-gap: 2rem;
+  align-items: start;
 }
-.products-container-column img {
-  width: 300px !important;
-  height: 200px !important;
-  margin-bottom: 1rem;
+.products-container-column .featured .container {
+  width: 100%;
+  max-width: 280px;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+.products-container-column .featured .container img {
+  width: 100% !important;
+  height: 100% !important;
+  margin-bottom: 0 !important;
+  object-fit: cover;
+  display: block;
 }
 .products-container-column .container:hover img {
-  opacity: unset !important;
+  opacity: 0.85;
 }
 .products-container-column .link {
   display: none;
@@ -1259,7 +1315,11 @@ hr {
     grid-template-columns: repeat(1, 1fr);
   }
   .products-container-column .featured {
-    grid-template-columns: unset;
+    grid-template-columns: 1fr;
+    row-gap: 1rem;
+  }
+  .products-container-column .featured .container {
+    max-width: 100%;
   }
 }
 /* single product */

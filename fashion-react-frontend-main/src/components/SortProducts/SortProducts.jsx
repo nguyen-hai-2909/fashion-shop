@@ -48,8 +48,6 @@ const SortProducts = (props) => {
         >
           <option value="priceLowest">price (lowest)</option>
           <option value="priceHighest">price (highest)</option>
-          <option value="nameA">name (a - z)</option>
-          <option value="nameZ">name (z - a)</option>
         </select>
       </form>
     </section>

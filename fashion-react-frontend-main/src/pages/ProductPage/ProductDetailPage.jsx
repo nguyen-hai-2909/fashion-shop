@@ -7,7 +7,14 @@ import { BsCheck } from "react-icons/bs";
 import { AiOutlineMinus, AiOutlinePlus, AiOutlineEdit } from "react-icons/ai";
 import { Modal } from "antd";
 import { cartContext } from "../../context/CartContext";
-import { formatCurrency, productImageUrl } from "../../utils";
+import {
+  cartImageUrl,
+  displayColorLabel,
+  formatCurrency,
+  formatVariantTitle,
+  productImageUrl,
+} from "../../utils";
+import { uploadImage } from "../../services/UploadService";
 import { buildCartLineItem } from "../../utils/buildCartLineItem";
 import { showToast } from "../../utils/showToast";
 import { labelForBrand, labelForCategory } from "../../constants";
@@ -47,6 +54,8 @@ const ProductDetailPage = () => {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewImages, setReviewImages] = useState([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const resolvedProductId = detailProduct?._id || identifier;
   const productIdForReviews = detailProduct?._id;
 
@@ -197,9 +206,35 @@ const ProductDetailPage = () => {
       const r = rv?.rating > 0 ? rv.rating : reviewable?.rating > 0 ? reviewable.rating : 5;
       setRating(r);
       setComment(rv?.comment ?? reviewable?.comment ?? "");
+      setReviewImages(
+        Array.isArray(rv?.reviewImages)
+          ? rv.reviewImages
+          : Array.isArray(reviewable?.reviewImages)
+            ? reviewable.reviewImages
+            : []
+      );
       setReviewModalOpen(true);
     },
     [reviewable]
+  );
+
+  const handleReviewImagePick = useCallback(
+    async (e) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file || !token || reviewImages.length >= 5) return;
+      setUploadingImage(true);
+      try {
+        const res = await uploadImage(file, token);
+        setReviewImages((prev) => [...prev, res.url]);
+        showToast.success("Image added");
+      } catch (err) {
+        showToast.error(err.message || "Upload failed");
+      } finally {
+        setUploadingImage(false);
+      }
+    },
+    [reviewImages.length, token]
   );
 
   const handleSubmitReview = useCallback(async () => {
@@ -211,6 +246,7 @@ const ProductDetailPage = () => {
       itemIndex: String(reviewable.itemIndex),
       rating,
       comment,
+      reviewImages,
     };
     const res = await mutateReview.mutateAsync(payload);
     if (!res?.success) {
@@ -225,6 +261,7 @@ const ProductDetailPage = () => {
     stockCurrent?._id,
     rating,
     comment,
+    reviewImages,
     reviewable,
     mutateReview,
     refetchReviewable,
@@ -244,6 +281,9 @@ const ProductDetailPage = () => {
     if (reviewable) {
       setRating(reviewable.rating > 0 ? reviewable.rating : 5);
       setComment(reviewable.comment || "");
+      setReviewImages(
+        Array.isArray(reviewable.reviewImages) ? reviewable.reviewImages : []
+      );
     }
   }, [reviewable]);
 
@@ -321,7 +361,7 @@ const ProductDetailPage = () => {
                         <button
                           key={color}
                           type="button"
-                          title={color}
+                          title={displayColorLabel(color)}
                           className={`color-btn${isActive ? " active" : ""}`}
                           style={{
                             backgroundColor: swatch,
@@ -444,29 +484,46 @@ const ProductDetailPage = () => {
             </div>
           </div>
 
-          <div className="section section-center page" style={{ marginTop: 0 }}>
-            <h3>Reviews</h3>
-            {(reviews || []).length === 0 && <p>No reviews yet.</p>}
+          <div
+            className="section section-center page product-reviews"
+            style={{ marginTop: 0 }}
+          >
+            <h3 className="product-reviews__title">Reviews</h3>
+            {(reviews || []).length === 0 && (
+              <p className="product-reviews__empty">No reviews yet.</p>
+            )}
             {(reviews || []).map((rv) => (
               <div
                 key={`${rv.orderId}-${rv.variantId}-${rv.reviewedAt}`}
-                style={{
-                  marginBottom: 12,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  gap: 12,
-                }}
+                className="product-reviews__item"
               >
                 <div style={{ flex: 1 }}>
-                  <strong>{rv.reviewerName || "Customer"}</strong>
-                  <span style={{ marginLeft: 8, color: "#ab7a5f" }}>
-                    {"★".repeat(rv.rating || 0)}
-                  </span>
+                  <div className="product-reviews__meta">
+                    <strong>{rv.reviewerName || "Customer"}</strong>
+                    <span style={{ color: "#ab7a5f" }}>
+                      {"★".repeat(rv.rating || 0)}
+                    </span>
+                  </div>
                   {rv.variantTitle ? (
-                    <div style={{ color: "#999", fontSize: 13 }}>{rv.variantTitle}</div>
+                    <div style={{ color: "#999", fontSize: 13, marginTop: 6 }}>
+                      {formatVariantTitle(rv.variantTitle)}
+                    </div>
                   ) : null}
-                  <div style={{ marginTop: 4 }}>{rv.comment || "No comment"}</div>
+                  <div style={{ marginTop: 8 }}>{rv.comment || "No comment"}</div>
+                  {Array.isArray(rv.reviewImages) && rv.reviewImages.length > 0 ? (
+                    <div className="product-reviews__photos">
+                      {rv.reviewImages.map((url) => (
+                        <a
+                          key={url}
+                          href={cartImageUrl({ url })}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <img src={cartImageUrl({ url })} alt="" />
+                        </a>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
                 {token &&
                   isOwnReview(rv) &&
@@ -531,6 +588,72 @@ const ProductDetailPage = () => {
                   placeholder="Your comment"
                   style={{ width: "100%", padding: "8px 10px", resize: "vertical" }}
                 />
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 6, fontWeight: 500 }}>
+                  Photos (optional, max 5)
+                </label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                  {reviewImages.map((url, i) => (
+                    <div key={url} style={{ position: "relative", width: 72, height: 72 }}>
+                      <img
+                        src={cartImageUrl({ url })}
+                        alt=""
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          borderRadius: 8,
+                          border: "1px solid #eee",
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setReviewImages((prev) => prev.filter((_, j) => j !== i))
+                        }
+                        style={{
+                          position: "absolute",
+                          top: -6,
+                          right: -6,
+                          width: 22,
+                          height: 22,
+                          borderRadius: "50%",
+                          border: "none",
+                          background: "#ff4d4f",
+                          color: "#fff",
+                          cursor: "pointer",
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  {reviewImages.length < 5 && (
+                    <label
+                      style={{
+                        width: 72,
+                        height: 72,
+                        border: "1px dashed var(--clr-primary-6)",
+                        borderRadius: 8,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 24,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        hidden
+                        onChange={handleReviewImagePick}
+                        disabled={uploadingImage}
+                      />
+                      {uploadingImage ? "…" : "+"}
+                    </label>
+                  )}
+                </div>
               </div>
             </div>
           </Modal>

@@ -140,10 +140,6 @@ const CategoryDrawer = ({ category, isOpen, onClose, refetch }) => {
                 </Space>
               }
             >
-              <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-                Slug is used in product filters (e.g. ao-nam). Leave empty to
-                auto-generate from the name on create.
-              </Typography.Paragraph>
               <Flex vertical gap="middle">
                 <FastField
                   component={InputCommon}
@@ -153,7 +149,7 @@ const CategoryDrawer = ({ category, isOpen, onClose, refetch }) => {
                 />
                 <FastField
                   component={InputCommon}
-                  title="Slug (optional)"
+                  title="Slug"
                   name="slug"
                   placeholder="e.g. ao-nam"
                   disabled={!!category}

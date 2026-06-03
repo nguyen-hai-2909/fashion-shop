@@ -75,7 +75,6 @@ const DiscountList = (props) => {
     {
       title: "Used / limit",
       key: "usage",
-      align: "center",
       render: (_, row) => {
         const used = row.usage_count ?? 0;
         const lim = row.usage_limit;

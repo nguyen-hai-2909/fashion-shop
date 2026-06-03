@@ -87,6 +87,7 @@ const Staff = () => {
           refetch={refetch}
           selectedRowKeys={selectedRowKeys}
           setSelectedRowKeys={setSelectedRowKeys}
+          canWrite={canWrite}
         />
       </Paper>
     </Fragment>

@@ -1,18 +1,26 @@
-import { useQuery } from "@tanstack/react-query";
-import { Fragment, useContext, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Fragment, useCallback, useContext, useState } from "react";
 import { Flex, Input } from "antd";
 import HeaderTable from "../../../common/HeaderTable";
 import Paper from "../../../common/Paper";
-import { GetUserAdminService } from "../../../services/AdminService";
+import {
+  DeleteUserAdminService,
+  GetUserAdminService,
+} from "../../../services/AdminService";
 import UserList from "./UserList/UserList";
 import { adminContext } from "../../../context/AdminContext";
 import { canWriteAdminData } from "../../../utils/adminPermission";
+import { toast } from "react-toastify";
 
 const User = () => {
   const { admin, tokenAdmin, dispatch } = useContext(adminContext);
   const canWrite = canWriteAdminData(admin?.role);
 
   const [data, setData] = useState([]);
+  const [customerValue, setCustomerValue] = useState(null);
+  const [isOpenDrawer, setIsOpenDrawer] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [isOpenModal, setIsOpenModal] = useState(false);
   const [query, setQuery] = useState({
     q: "",
     page: 1,
@@ -45,9 +53,44 @@ const User = () => {
     },
   });
 
+  const deleteMut = useMutation({
+    mutationFn: (id) => DeleteUserAdminService(id, tokenAdmin),
+  });
+
+  const handleDelete = useCallback(async () => {
+    try {
+      await Promise.all(selectedRowKeys.map((id) => deleteMut.mutateAsync(id)));
+      toast.success(
+        selectedRowKeys.length === 1
+          ? "Customer deleted"
+          : `${selectedRowKeys.length} customers deleted`
+      );
+      setSelectedRowKeys([]);
+      setIsOpenModal(false);
+      refetch();
+    } catch (e) {
+      toast.error(e.message || "Delete failed");
+    }
+  }, [selectedRowKeys, deleteMut, refetch]);
+
   return (
     <Fragment>
-      <HeaderTable onRefetch={refetch} title="Customers" />
+      <HeaderTable
+        title="Customers"
+        deleteEntity="customer"
+        isCreate={canWrite}
+        isDelete={canWrite}
+        selectedRowKeys={selectedRowKeys}
+        onRefetch={refetch}
+        onCreate={() => {
+          setCustomerValue(null);
+          setIsOpenDrawer(true);
+        }}
+        onDelete={handleDelete}
+        isLoadingDelete={deleteMut.isLoading}
+        isOpenModal={isOpenModal}
+        handleChangeModal={() => setIsOpenModal((v) => !v)}
+      />
       <Paper isFix={true}>
         <Flex style={{ marginBottom: 12 }}>
           <Input.Search
@@ -69,6 +112,12 @@ const User = () => {
           tokenAdmin={tokenAdmin}
           canWrite={canWrite}
           onRefetch={refetch}
+          customerValue={customerValue}
+          setCustomerValue={setCustomerValue}
+          isOpenDrawer={isOpenDrawer}
+          setIsOpenDrawer={setIsOpenDrawer}
+          selectedRowKeys={selectedRowKeys}
+          setSelectedRowKeys={setSelectedRowKeys}
         />
       </Paper>
     </Fragment>

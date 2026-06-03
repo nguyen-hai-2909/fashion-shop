@@ -1,5 +1,8 @@
+import { colorsList } from "../constants";
+
 export const getSortType = () => {
   const data = localStorage.getItem("sortType");
+  if (data === "nameA" || data === "nameZ") return "priceLowest";
   return data ? data : "priceLowest";
 };
 
@@ -67,13 +70,45 @@ export const renderShippingFee = (products) => {
   return subtotal > FREE_SHIPPING_THRESHOLD ? 0 : STANDARD_SHIPPING_FEE;
 };
 
+const normalizeHexKey = (hex) => {
+  if (!hex) return "";
+  let h = String(hex).trim();
+  if (!h.startsWith("#")) h = `#${h}`;
+  return h.toUpperCase();
+};
+
+/** Map hex code to catalog color name (e.g. #A67C52 → Brown-Beige). */
+export const colorLabelFromValue = (value) => {
+  if (value == null || value === "") return "—";
+  const v = String(value).trim();
+  const fromList = colorsList.find(
+    (c) => normalizeHexKey(c.value) === normalizeHexKey(v)
+  );
+  if (fromList) return fromList.label;
+  if (v.startsWith("#")) return v;
+  return v;
+};
+
+/** e.g. "#A67C52 / S" → "Brown-Beige / S" */
+export const formatVariantTitle = (title) => {
+  if (title == null || title === "") return "—";
+  const parts = String(title).split(/\s*\/\s*/);
+  if (parts.length >= 2) {
+    const size = parts.slice(1).join(" / ").trim();
+    const colorLabel = colorLabelFromValue(parts[0].trim());
+    return size ? `${colorLabel} / ${size}` : colorLabel;
+  }
+  return colorLabelFromValue(parts[0].trim());
+};
+
 /** Cart / checkout: color may be a string (hex or name) or legacy nested object. */
 export const displayColorLabel = (color) => {
   if (color == null) return "—";
-  if (typeof color === "string") return color;
+  if (typeof color === "string") return colorLabelFromValue(color);
   if (typeof color === "object") {
     if (color.label) return String(color.label);
-    if (color.name) return String(color.name);
+    if (color.name) return colorLabelFromValue(color.name);
+    if (color.hex) return colorLabelFromValue(color.hex);
   }
   return "—";
 };

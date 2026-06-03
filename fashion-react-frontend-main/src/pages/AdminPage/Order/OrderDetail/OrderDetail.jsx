@@ -8,7 +8,6 @@ import Paper from "../../../../common/Paper";
 import { enumPaymentStatus, enumStatus } from "../../../../constants";
 import { adminContext } from "../../../../context/AdminContext";
 import { GetOrderAdminDetailService } from "../../../../services/AdminService";
-import { format } from "timeago.js";
 import ModalChangeStatus from "../Modal/ModalChangeStatus";
 import ModalChangePaymentStatus from "../Modal/ModalChangePaymentStatus";
 import {
@@ -16,6 +15,20 @@ import {
   formatCurrency,
   formatPaymentMethod,
 } from "../../../../utils";
+const formatPlacedDate = (iso) => {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleString("en-GB", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return "—";
+  }
+};
+
 const OrderDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -88,7 +101,7 @@ const OrderDetail = () => {
                   Order detail
                 </p>
                 <p style={{ color: "#8c8c8c", fontWeight: "400", margin: 0 }}>
-                  Placed: {data.createdAt ? format(data.createdAt) : "—"}
+                  Placed: {formatPlacedDate(data.createdAt)}
                 </p>
               </Flex>
             }
@@ -208,7 +221,7 @@ const OrderDetail = () => {
                         Variant: {el?.color || "—"}
                       </span>
                       <span style={{ color: "#8c8c8c", display: "block" }}>
-                        Qty: {el?.amount}
+                        Quality: {el?.amount}
                       </span>
                     </div>
                     <div className="product-price">

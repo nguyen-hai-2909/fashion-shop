@@ -21,3 +21,13 @@ export const GetOrderUserDetailService = async (id, token) => {
     headers: { Authorization: `Bearer ${token}` },
   });
 };
+
+export const CancelOrderUserService = async (id, token) => {
+  return await axios.patch(
+    `${ApiEndpoint.ORDER_ENDPOINT}/${id}/cancel`,
+    {},
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+};

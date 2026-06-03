@@ -104,6 +104,8 @@ public class Order {
         private String comment;
         @Field("reviewed_at")
         private Instant reviewedAt;
+        @Field("review_images")
+        private List<String> reviewImages = new ArrayList<>();
     }
 
     @Data

@@ -431,13 +431,6 @@ const ProductForm = () => {
                     <Typography.Title level={5} style={{ marginTop: 0 }}>
                       Store classification
                     </Typography.Title>
-                    <Typography.Paragraph
-                      type="secondary"
-                      style={{ marginTop: 0, marginBottom: 16 }}
-                    >
-                      Category and brand match the storefront filters. Stored values are
-                      slugs (e.g. <code>ao-nam</code>, <code>zara</code>);
-                    </Typography.Paragraph>
                     <Row gutter={16} style={{ marginBottom: "1rem" }}>
                       <Col span={24}>
                         <span

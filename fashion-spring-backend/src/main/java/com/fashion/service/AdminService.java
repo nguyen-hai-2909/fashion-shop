@@ -178,14 +178,36 @@ public class AdminService {
         return m;
     }
 
+    public Map<String, Object> createCustomer(Map<String, Object> body) {
+        String email = Objects.toString(body.get("email"), "").trim().toLowerCase(Locale.ROOT);
+        if (email.isBlank()) {
+            return Map.of("success", false, "message", "Email is required");
+        }
+        if (userRepository.findByEmail(email).isPresent()) {
+            return Map.of("success", false, "message", "Email already exists");
+        }
+        String raw = Objects.toString(body.get("password"), "").trim();
+        if (!isStrongPassword(raw)) {
+            return Map.of("success", false, "message", PASSWORD_RULE_MESSAGE);
+        }
+        User u = new User();
+        u.setEmail(email);
+        u.setPhone(Objects.toString(body.get("phone"), Objects.toString(body.get("phoneNumber"), "")).trim());
+        u.setFullName(Objects.toString(body.get("fullName"), Objects.toString(body.get("name"), "")).trim());
+        u.setRole("customer");
+        u.setLocked(Boolean.TRUE.equals(body.get("locked")));
+        u.setPassword(passwordEncoder.encode(raw));
+        User saved = userRepository.save(u);
+        return Map.of("success", true, "message", "Customer created", "data", toCustomerMap(saved));
+    }
+
     public Map<String, Object> updateUser(String userId, Map<String, Object> body) {
         User u = userRepository.findById(userId).orElse(null);
         if (u == null) {
             return Map.of("success", false, "message", "User not found");
         }
-        String role = normalizeRole(u.getRole());
-        if ("admin".equals(role) || "manager".equals(role)) {
-            return Map.of("success", false, "message", "Cannot modify admin or manager accounts here");
+        if (!isStorefrontCustomer(u)) {
+            return Map.of("success", false, "message", "Cannot modify staff or admin accounts here");
         }
         if (body.containsKey("locked")) {
             u.setLocked(Boolean.TRUE.equals(body.get("locked")));
@@ -195,6 +217,13 @@ public class AdminService {
         }
         if (body.containsKey("phone")) {
             u.setPhone(Objects.toString(body.get("phone"), "").trim());
+        }
+        String raw = Objects.toString(body.get("password"), "").trim();
+        if (!raw.isBlank()) {
+            if (!isStrongPassword(raw)) {
+                return Map.of("success", false, "message", PASSWORD_RULE_MESSAGE);
+            }
+            u.setPassword(passwordEncoder.encode(raw));
         }
         userRepository.save(u);
         return Map.of("success", true, "message", "Customer updated");
@@ -209,12 +238,32 @@ public class AdminService {
         if (u == null) {
             return Map.of("success", false, "message", "User not found");
         }
-        String role = normalizeRole(u.getRole());
-        if ("admin".equals(role) || "manager".equals(role)) {
-            return Map.of("success", false, "message", "Cannot delete admin or manager accounts");
+        if (!isStorefrontCustomer(u)) {
+            return Map.of("success", false, "message", "Cannot delete staff or admin accounts");
         }
         userRepository.deleteById(userId);
         return Map.of("success", true, "message", "Account deleted");
+    }
+
+    private static boolean isStorefrontCustomer(User u) {
+        String role = u.getRole();
+        return role == null || role.isBlank() || "customer".equalsIgnoreCase(role.trim());
+    }
+
+    private Map<String, Object> toCustomerMap(User u) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("_id", u.getId());
+        m.put("id", u.getId());
+        m.put("email", u.getEmail());
+        m.put("phone", u.getPhone());
+        m.put("phoneNumber", u.getPhone());
+        m.put("fullName", u.getFullName());
+        m.put("name", u.getFullName());
+        m.put("role", u.getRole());
+        m.put("locked", Boolean.TRUE.equals(u.getLocked()));
+        m.put("createdAt", u.getCreatedAt());
+        m.put("addresses", u.getAddresses() != null ? u.getAddresses() : List.of());
+        return m;
     }
 
     public Map<String, Object> login(Map<String, String> body) {
@@ -274,7 +323,7 @@ public class AdminService {
         Pattern np = Pattern.compile(name != null && !name.isBlank() ? name : ".*", Pattern.CASE_INSENSITIVE);
         Pattern pp = Pattern.compile(phoneNumber != null && !phoneNumber.isBlank() ? phoneNumber : ".*", Pattern.CASE_INSENSITIVE);
         List<User> filtered = userRepository.findAll().stream()
-                .filter(u -> !"admin".equalsIgnoreCase(u.getRole()))
+                .filter(AdminService::isStorefrontCustomer)
                 .filter(u -> {
                     if (useQ) {
                         String em = u.getEmail() != null ? u.getEmail().toLowerCase(Locale.ROOT) : "";
@@ -489,6 +538,7 @@ public class AdminService {
         it.setRating(null);
         it.setComment(null);
         it.setReviewedAt(null);
+        it.setReviewImages(new ArrayList<>());
         orderRepository.save(o);
         return Map.of("success", true, "message", "Delete review success");
     }

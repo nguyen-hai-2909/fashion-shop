@@ -12,7 +12,8 @@ const uploadClient = axios.create({ baseURL });
  * @param {string} token Admin JWT
  * @returns {Promise<{ success: boolean, url: string, original_filename: string, asset_id: string }>}
  */
-export const uploadProductImage = async (file, token) => {
+/** Upload image (customer or admin token). */
+export const uploadImage = async (file, token) => {
   const formData = new FormData();
   formData.append("file", file);
   const { data } = await uploadClient.post("uploads/image", formData, {
@@ -23,3 +24,5 @@ export const uploadProductImage = async (file, token) => {
   }
   return data;
 };
+
+export const uploadProductImage = uploadImage;

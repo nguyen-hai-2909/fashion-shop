@@ -1,49 +1,46 @@
 /* eslint-disable react/prop-types */
 import { Table, Tag, Popconfirm, Button, Tooltip } from "antd";
-import { Fragment, useCallback, useState } from "react";
+import { Fragment, useCallback } from "react";
 import Highlighter from "react-highlight-words";
 import { useMutation } from "@tanstack/react-query";
-import {
-  DeleteUserAdminService,
-  UpdateUserAdminService,
-} from "../../../../services/AdminService";
+import { UpdateUserAdminService } from "../../../../services/AdminService";
 import { toast } from "react-toastify";
-import { DeleteOutlined, LockOutlined, SettingOutlined, UnlockOutlined } from "@ant-design/icons";
+import { LockOutlined, SettingOutlined, UnlockOutlined } from "@ant-design/icons";
 import CustomerDrawer from "../CustomerDrawer/CustomerDrawer";
 
 const UserList = (props) => {
-  const { isLoading, data, query, setQuery, tokenAdmin, canWrite = true, onRefetch } = props;
-
-  const [editTarget, setEditTarget] = useState(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const {
+    isLoading,
+    data,
+    query,
+    setQuery,
+    tokenAdmin,
+    canWrite = true,
+    onRefetch,
+    customerValue,
+    setCustomerValue,
+    isOpenDrawer,
+    setIsOpenDrawer,
+    selectedRowKeys,
+    setSelectedRowKeys,
+  } = props;
 
   const mutateLock = useMutation({
     mutationFn: ({ id, locked }) => UpdateUserAdminService(id, { locked }, tokenAdmin),
   });
 
-  const mutateDelete = useMutation({
-    mutationFn: (id) => DeleteUserAdminService(id, tokenAdmin),
-  });
+  const openEdit = useCallback(
+    (record) => {
+      setCustomerValue(record);
+      setIsOpenDrawer(true);
+    },
+    [setCustomerValue, setIsOpenDrawer]
+  );
 
-  const handleDelete = async (record) => {
-    const res = await mutateDelete.mutateAsync(record._id);
-    if (res?.success) {
-      toast.success(res.message || "Account deleted");
-      onRefetch?.();
-    } else {
-      toast.error(res?.message || "Delete failed");
-    }
-  };
-
-  const openEdit = useCallback((record) => {
-    setEditTarget(record);
-    setDrawerOpen(true);
-  }, []);
-
-  const closeEdit = useCallback(() => {
-    setDrawerOpen(false);
-    setEditTarget(null);
-  }, []);
+  const closeDrawer = useCallback(() => {
+    setIsOpenDrawer(false);
+    setCustomerValue(null);
+  }, [setCustomerValue, setIsOpenDrawer]);
 
   const hi = (text) => {
     const t = text == null ? "" : String(text);
@@ -124,12 +121,13 @@ const UserList = (props) => {
     {
       title: "Actions",
       key: "actions",
-      width: 130,
+      width: 90,
+      align: "center",
       render: (_, record) => {
-        const locked = Boolean(record.locked);
         if (!canWrite) return "—";
+        const locked = Boolean(record.locked);
         return (
-          <div style={{ display: "flex", gap: 6 }}>
+          <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
             <Tooltip title="Edit customer">
               <Button
                 size="small"
@@ -139,14 +137,16 @@ const UserList = (props) => {
                 onClick={() => openEdit(record)}
               />
             </Tooltip>
-
             <Tooltip title={locked ? "Unlock account" : "Lock account"}>
               <Popconfirm
                 title={locked ? "Unlock this account?" : "Lock this account?"}
                 okText="Yes"
                 cancelText="No"
                 onConfirm={async () => {
-                  const res = await mutateLock.mutateAsync({ id: record._id, locked: !locked });
+                  const res = await mutateLock.mutateAsync({
+                    id: record._id,
+                    locked: !locked,
+                  });
                   if (res?.success) {
                     toast.success(res.message || (!locked ? "Locked" : "Unlocked"));
                     onRefetch?.();
@@ -162,19 +162,6 @@ const UserList = (props) => {
                 />
               </Popconfirm>
             </Tooltip>
-
-            <Tooltip title="Delete account">
-              <Popconfirm
-                title="Permanently delete this account?"
-                description="This action cannot be undone."
-                okText="Delete"
-                okButtonProps={{ danger: true }}
-                cancelText="Cancel"
-                onConfirm={() => handleDelete(record)}
-              >
-                <Button size="small" icon={<DeleteOutlined />} danger />
-              </Popconfirm>
-            </Tooltip>
           </div>
         );
       },
@@ -186,6 +173,14 @@ const UserList = (props) => {
       <Table
         rowKey="_id"
         bordered
+        rowSelection={
+          canWrite
+            ? {
+                selectedRowKeys,
+                onChange: setSelectedRowKeys,
+              }
+            : undefined
+        }
         columns={columns}
         dataSource={data}
         loading={isLoading}
@@ -196,11 +191,11 @@ const UserList = (props) => {
           onChange: (page) => setQuery((prev) => ({ ...prev, page })),
         }}
       />
-      {drawerOpen && editTarget && (
+      {isOpenDrawer && (
         <CustomerDrawer
-          customer={editTarget}
-          isOpen={drawerOpen}
-          onClose={closeEdit}
+          customer={customerValue}
+          isOpen={isOpenDrawer}
+          onClose={closeDrawer}
           refetch={onRefetch}
         />
       )}

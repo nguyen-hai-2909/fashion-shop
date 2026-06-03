@@ -200,14 +200,10 @@ const DiscountDrawer = (props) => {
                 </Space>
               }
             >
-              <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-                Leave usage limit empty for unlimited redemptions (stored as{" "}
-                <code>usage_limit</code> = null).
-              </Typography.Paragraph>
               <Flex vertical gap="middle">
                 <FastField
                   component={InputCommon}
-                  title="Code (uppercase, no extra spaces)"
+                  title="Code"
                   name="discountCode"
                   placeholder="e.g. SUMMER2026"
                   disabled={!!discount}
@@ -238,7 +234,7 @@ const DiscountDrawer = (props) => {
                 />
                 <FastField
                   component={InputCommon}
-                  title="Usage limit (optional)"
+                  title="Usage limit"
                   name="usageLimit"
                   placeholder="Empty = unlimited"
                   type="number"

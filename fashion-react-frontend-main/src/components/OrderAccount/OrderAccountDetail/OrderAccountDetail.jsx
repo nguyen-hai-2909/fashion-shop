@@ -1,14 +1,24 @@
 import { useQuery } from "@tanstack/react-query";
-import { Button, Card, Flex } from "antd";
-import { Fragment, useContext, useEffect, useState } from "react";
+import { Button, Card, Flex, Popconfirm, Tag } from "antd";
+import { Fragment, useCallback, useContext, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import HashLoader from "react-spinners/HashLoader";
-import { GetOrderUserDetailService } from "../../../services/OrderService";
+import {
+  CancelOrderUserService,
+  GetOrderUserDetailService,
+} from "../../../services/OrderService";
 import "./OrderAccountDetail.scss";
 import { RollbackOutlined } from "@ant-design/icons";
 import { authContext } from "../../../context/AuthContext";
-import { cartImageUrl, formatCurrency, formatPaymentMethod } from "../../../utils";
-import { format } from "timeago.js";
+import {
+  cartImageUrl,
+  formatCurrency,
+  formatPaymentMethod,
+  formatVariantTitle,
+} from "../../../utils";
+import { enumStatus } from "../../../constants";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "react-toastify";
 
 const OrderAccountDetail = () => {
   const { dispatch, token } = useContext(authContext);
@@ -18,6 +28,10 @@ const OrderAccountDetail = () => {
 
   //! State
   const [data, setData] = useState({});
+  const cancelMut = useMutation({
+    mutationFn: () => CancelOrderUserService(id, token),
+  });
+
   const { isLoading, isFetching, refetch } = useQuery(
     ["order-detail"],
     () => GetOrderUserDetailService(id, token),
@@ -35,7 +49,16 @@ const OrderAccountDetail = () => {
       },
     }
   );
-  //! Function
+  const handleCancelOrder = useCallback(async () => {
+    try {
+      const res = await cancelMut.mutateAsync();
+      if (!res?.success) throw new Error(res?.message);
+      toast.success(res.message || "Order cancelled");
+      refetch?.();
+    } catch (e) {
+      toast.error(e.message || "Could not cancel order");
+    }
+  }, [cancelMut, refetch]);
 
   //! Effect
   useEffect(() => {
@@ -44,9 +67,10 @@ const OrderAccountDetail = () => {
   //! Render
   const shipping = data?.shippingAddress || {};
   const products = data?.items || [];
-  const canReviewOrder = ["pending", "confirmed", "shipping", "delivered"].includes(
-    String(data?.status || "").toLowerCase()
-  );
+  const orderStatus = String(data?.status || "").toLowerCase();
+  const canCancelOrder = orderStatus === "pending";
+  const canReviewOrder = orderStatus === "delivered";
+  const statusMeta = enumStatus.find((s) => s.value === orderStatus);
   const subtotal = data?.subtotal ?? 0;
   const discountAmount = data?.discountAmount ?? 0;
   const shippingFee = data?.shippingFee ?? 0;
@@ -63,13 +87,32 @@ const OrderAccountDetail = () => {
       <Card
         title={`Order ${id}`}
         extra={
-          <Button
-            icon={<RollbackOutlined />}
-            shape="default"
-            onClick={() => {
-              navigate("/user/order", { replace: true });
-            }}
-          />
+          <Flex gap={8} align="center">
+            {statusMeta && (
+              <Tag color={statusMeta.color}>{statusMeta.label}</Tag>
+            )}
+            {canCancelOrder && (
+              <Popconfirm
+                title="Cancel this order?"
+                description="You can only cancel while the order is pending."
+                okText="Cancel order"
+                okButtonProps={{ danger: true }}
+                cancelText="Keep order"
+                onConfirm={handleCancelOrder}
+              >
+                <Button danger loading={cancelMut.isLoading}>
+                  Cancel order
+                </Button>
+              </Popconfirm>
+            )}
+            <Button
+              icon={<RollbackOutlined />}
+              shape="default"
+              onClick={() => {
+                navigate("/user/order", { replace: true });
+              }}
+            />
+          </Flex>
         }
       >
         {isLoading || isFetching ? (
@@ -80,12 +123,22 @@ const OrderAccountDetail = () => {
           <Fragment>
             <div style={{ display: "flex", flexWrap: "wrap" }}>
               <Card.Grid style={{ width: "50%", textAlign: "left" }}>
-                <span style={{ fontWeight: 500 }}>Created date: </span>
-                {format(data.createdAt)}
+                <span style={{ fontWeight: 500 }}>Created: </span>
+                {data.createdAt
+                  ? new Date(data.createdAt).toLocaleString("en-GB", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })
+                  : "—"}
               </Card.Grid>
               <Card.Grid style={{ width: "50%", textAlign: "left" }}>
-                <span style={{ fontWeight: 500 }}>Updated date: </span>
-                {format(data.updatedAt)}
+                <span style={{ fontWeight: 500 }}>Updated: </span>
+                {data.updatedAt
+                  ? new Date(data.updatedAt).toLocaleString("en-GB", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })
+                  : "—"}
               </Card.Grid>
               <Card.Grid style={{ width: "33.33%", textAlign: "left" }}>
                 <span style={{ fontWeight: 500 }}>Email: </span>
@@ -158,7 +211,7 @@ const OrderAccountDetail = () => {
                         Price: {formatCurrency(el?.unitPrice ?? 0)}
                       </span>
                       <span style={{ color: "#d9d9d9" }}>
-                        Variant: {el?.variantTitle || "—"}
+                        Variant: {formatVariantTitle(el?.variantTitle)}
                       </span>
                       <span style={{ color: "#d9d9d9" }}>
                         Amount: {el?.quantity ?? 0}
@@ -168,13 +221,6 @@ const OrderAccountDetail = () => {
                       <span style={{ fontWeight: 500, fontSize: "16px" }}>
                         {formatCurrency(el?.subtotal ?? 0)}
                       </span>
-                      {canReviewOrder && (
-                        <div style={{ marginTop: 8 }}>
-                          <Link to={`/order/${id}/review/${idx}`}>
-                            {(el?.rating ?? 0) > 0 ? "Edit review" : "Rate"}
-                          </Link>
-                        </div>
-                      )}
                     </div>
                   </Card.Grid>
                 );

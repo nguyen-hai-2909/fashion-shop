@@ -36,4 +36,14 @@ public class OrderController {
         String userId = AuthUtil.requireUserId();
         return ResponseEntity.ok(orderService.detail(id, userId));
     }
+
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<?> cancel(@PathVariable String id) {
+        String userId = AuthUtil.requireUserId();
+        var res = orderService.cancelByUser(userId, id);
+        if (Boolean.FALSE.equals(res.get("success"))) {
+            return ResponseEntity.badRequest().body(res);
+        }
+        return ResponseEntity.ok(res);
+    }
 }

@@ -11,6 +11,7 @@ import com.fashion.repository.OrderRepository;
 import com.fashion.repository.ProductRepository;
 import com.fashion.repository.UserRepository;
 import com.fashion.security.JwtService;
+import com.fashion.util.ColorDisplayUtil;
 import com.fashion.util.ShippingUtil;
 import lombok.RequiredArgsConstructor;
 import org.bson.Document;
@@ -30,9 +31,8 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class OrderService {
 
-    /** Orders eligible for product reviews (includes legacy pending orders). */
-    private static final Set<String> REVIEWABLE_ORDER_STATUSES =
-            Set.of("pending", "confirmed", "shipping", "delivered");
+    /** Only delivered orders allow customer product reviews. */
+    private static final Set<String> REVIEWABLE_ORDER_STATUSES = Set.of("delivered");
 
     private final OrderRepository orderRepository;
     private final FashionDiscountRepository discountRepository;
@@ -110,8 +110,7 @@ public class OrderService {
                     imgUrl = product.getImages().get(0).getUrl();
                 }
 
-                String vTitle = (variant.getColor() != null ? variant.getColor().getName() : "")
-                        + " / " + variant.getSize();
+                String vTitle = ColorDisplayUtil.variantTitle(variant);
 
                 Order.OrderItem oi = new Order.OrderItem();
                 oi.setProductId(product.getId());
@@ -154,9 +153,9 @@ public class OrderService {
             order.setOrderNumber(orderNumberService.nextOrderNumber());
             order.setUserId(userId);
             order.setUserEmail(user.getEmail());
-            order.setStatus("confirmed");
+            order.setStatus("pending");
             Order.StatusLog log = new Order.StatusLog();
-            log.setStatus("confirmed");
+            log.setStatus("pending");
             log.setAt(Instant.now());
             log.setNote("Order placed");
             order.setStatusLogs(new ArrayList<>(List.of(log)));
@@ -285,6 +284,48 @@ public class OrderService {
         }
     }
 
+    private void incInventory(String productId, String variantId, int qty) {
+        Query q = new Query(Criteria.where("_id").is(productId).and("variants._id").is(variantId));
+        Update u = new Update().inc("variants.$.inventory", qty);
+        mongoTemplate.updateFirst(q, u, Product.class);
+    }
+
+    public Map<String, Object> cancelByUser(String userId, String orderId) {
+        return findOrderForUser(orderId, userId)
+                .map(o -> {
+                    if (!"pending".equalsIgnoreCase(o.getStatus())) {
+                        return Map.<String, Object>of(
+                                "success", false,
+                                "message", "Only pending orders can be cancelled"
+                        );
+                    }
+                    if (o.getItems() != null) {
+                        for (Order.OrderItem it : o.getItems()) {
+                            if (it.getProductId() != null && it.getVariantId() != null && it.getQuantity() > 0) {
+                                incInventory(it.getProductId(), it.getVariantId(), it.getQuantity());
+                            }
+                        }
+                    }
+                    Order.StatusLog log = new Order.StatusLog();
+                    log.setStatus("cancelled");
+                    log.setAt(Instant.now());
+                    log.setNote("Cancelled by customer");
+                    if (o.getStatusLogs() == null) {
+                        o.setStatusLogs(new ArrayList<>());
+                    }
+                    o.getStatusLogs().add(log);
+                    o.setStatus("cancelled");
+                    o.setCancelReason("Cancelled by customer");
+                    Order saved = orderRepository.save(o);
+                    return Map.<String, Object>of(
+                            "success", true,
+                            "message", "Order cancelled",
+                            "data", toClientOrder(saved)
+                    );
+                })
+                .orElse(Map.of("success", false, "message", "Not found"));
+    }
+
     public Map<String, Object> detail(String id, String userId) {
         return findOrderForUser(id, userId)
                 .map(o -> Map.<String, Object>of("success", true, "message", "Success!", "data", o))
@@ -392,10 +433,11 @@ public class OrderService {
         row.put("productId", it.getProductId());
         row.put("variantId", it.getVariantId());
         row.put("productName", it.getProductName());
-        row.put("variantTitle", it.getVariantTitle());
+        row.put("variantTitle", ColorDisplayUtil.formatStoredVariantTitle(it.getVariantTitle()));
         row.put("imageUrl", it.getImageUrl());
         row.put("rating", it.getRating() != null ? it.getRating() : 0);
         row.put("comment", it.getComment() != null ? it.getComment() : "");
+        row.put("reviewImages", it.getReviewImages() != null ? it.getReviewImages() : List.of());
         row.put("canReview", canReview);
         row.put("hasReview", it.getRating() != null && it.getRating() > 0);
         return row;
@@ -422,7 +464,8 @@ public class OrderService {
                                 "itemIndex", i,
                                 "rating", it.getRating() != null ? it.getRating() : 0,
                                 "comment", it.getComment() != null ? it.getComment() : "",
-                                "hasReview", it.getRating() != null && it.getRating() > 0
+                                "hasReview", it.getRating() != null && it.getRating() > 0,
+                                "reviewImages", it.getReviewImages() != null ? it.getReviewImages() : List.of()
                         )
                 );
             }
@@ -430,20 +473,23 @@ public class OrderService {
         return Map.of("success", false, "message", "Purchase this product to leave a review");
     }
 
-    public Map<String, Object> submitReview(String userId, Map<String, String> body) {
+    public Map<String, Object> submitReview(String userId, Map<String, Object> body, List<String> reviewImages) {
         try {
-            String orderId = body.get("orderId");
-            String itemIndexRaw = body.get("itemIndex");
+            String orderId = body.get("orderId") != null ? body.get("orderId").toString() : null;
+            String itemIndexRaw = body.get("itemIndex") != null ? body.get("itemIndex").toString() : null;
             if (orderId != null && !orderId.isBlank() && itemIndexRaw != null && !itemIndexRaw.isBlank()) {
                 int itemIndex = Integer.parseInt(itemIndexRaw);
-                int rating = Integer.parseInt(body.getOrDefault("rating", "0"));
+                int rating = Integer.parseInt(Objects.toString(body.get("rating"), "0"));
                 String comment = Objects.toString(body.get("comment"), "").trim();
-                return submitReviewForOrderItem(userId, orderId, itemIndex, rating, comment);
+                return submitReviewForOrderItem(
+                        userId, orderId, itemIndex, rating, comment,
+                        reviewImages != null ? reviewImages : List.of()
+                );
             }
 
-            String productId = body.get("productId");
-            String variantId = body.get("variantId");
-            int rating = Integer.parseInt(body.getOrDefault("rating", "0"));
+            String productId = body.get("productId") != null ? body.get("productId").toString() : null;
+            String variantId = body.get("variantId") != null ? body.get("variantId").toString() : null;
+            int rating = Integer.parseInt(Objects.toString(body.get("rating"), "0"));
             String comment = Objects.toString(body.get("comment"), "").trim();
             if (productId == null || productId.isBlank()) return Map.of("success", false, "message", "Missing product");
             if (rating < 1 || rating > 5) return Map.of("success", false, "message", "Rating must be 1-5");
@@ -460,7 +506,10 @@ public class OrderService {
                     Order.OrderItem it = o.getItems().get(i);
                     if (!Objects.equals(it.getProductId(), productId)) continue;
                     if (variantId != null && !variantId.isBlank() && !Objects.equals(it.getVariantId(), variantId)) continue;
-                    return submitReviewForOrderItem(userId, o.getId(), i, rating, comment);
+                    return submitReviewForOrderItem(
+                            userId, o.getId(), i, rating, comment,
+                            reviewImages != null ? reviewImages : List.of()
+                    );
                 }
             }
             return Map.of("success", false, "message", "Purchase this product to leave a review");
@@ -470,7 +519,7 @@ public class OrderService {
     }
 
     public Map<String, Object> submitReviewForOrderItem(
-            String userId, String orderId, int itemIndex, int rating, String comment
+            String userId, String orderId, int itemIndex, int rating, String comment, List<String> reviewImages
     ) {
         if (rating < 1 || rating > 5) {
             return Map.of("success", false, "message", "Rating must be 1-5");
@@ -480,7 +529,7 @@ public class OrderService {
             return Map.of("success", false, "message", "Order not found");
         }
         if (!isOrderReviewable(o)) {
-            return Map.of("success", false, "message", "This order is not open for reviews yet");
+            return Map.of("success", false, "message", "Reviews are only available after delivery");
         }
         if (o.getItems() == null || itemIndex < 0 || itemIndex >= o.getItems().size()) {
             return Map.of("success", false, "message", "Item not found");
@@ -489,6 +538,14 @@ public class OrderService {
         it.setRating(rating);
         it.setComment(comment);
         it.setReviewedAt(Instant.now());
+        if (reviewImages != null) {
+            List<String> urls = reviewImages.stream()
+                    .filter(u -> u != null && !u.isBlank())
+                    .map(String::trim)
+                    .limit(5)
+                    .toList();
+            it.setReviewImages(new ArrayList<>(urls));
+        }
         orderRepository.save(o);
         return Map.of("success", true, "message", "Review submitted");
     }
@@ -512,7 +569,8 @@ public class OrderService {
                 row.put("productId", it.getProductId());
                 row.put("productName", it.getProductName());
                 row.put("variantId", it.getVariantId());
-                row.put("variantTitle", it.getVariantTitle());
+                row.put("variantTitle", ColorDisplayUtil.formatStoredVariantTitle(it.getVariantTitle()));
+                row.put("reviewImages", it.getReviewImages() != null ? it.getReviewImages() : List.of());
                 row.put("reviewedAt", it.getReviewedAt() != null ? it.getReviewedAt() : o.getUpdatedAt());
                 rows.add(row);
             }

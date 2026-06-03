@@ -79,6 +79,66 @@
     font-size: 14px;
     margin-bottom: 16px;
   }
+
+  &__photos {
+    margin-top: 16px;
+  }
+
+  &__photos-label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+
+  &__photos-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  &__photo-wrap {
+    position: relative;
+    width: 72px;
+    height: 72px;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #eee;
+    }
+  }
+
+  &__photo-remove {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: #ff4d4f;
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  &__photo-add {
+    width: 72px;
+    height: 72px;
+    border: 1px dashed var(--clr-primary-6);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: var(--clr-primary-5);
+    cursor: pointer;
+    background: var(--clr-primary-10);
+  }
 }
 
 .order-review-hub {

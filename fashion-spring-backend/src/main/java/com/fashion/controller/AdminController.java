@@ -55,6 +55,16 @@ public class AdminController {
         return ResponseEntity.ok(productService.getOneAnyStatus(id));
     }
 
+    @PostMapping("/user")
+    public ResponseEntity<?> createUser(@RequestBody Map<String, Object> body) {
+        try {
+            adminAuthorizationService.requireAdminOrManager();
+            return ResponseEntity.ok(adminService.createCustomer(body));
+        } catch (IllegalStateException e) {
+            return forbidden(e.getMessage());
+        }
+    }
+
     @GetMapping("/user")
     public ResponseEntity<?> users(
             @RequestParam(defaultValue = "10") int perPage,

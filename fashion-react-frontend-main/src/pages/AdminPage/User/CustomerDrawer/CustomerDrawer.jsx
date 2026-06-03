@@ -1,17 +1,34 @@
 /* eslint-disable react/prop-types */
-import { Fragment, useCallback, useContext, useMemo } from "react";
+import { Fragment, useCallback, useContext, useMemo, useState } from "react";
 import { FastField, Form, Formik } from "formik";
-import { Button, Drawer, Flex, Modal, Select, Space, Typography } from "antd";
+import { Button, Drawer, Flex, Input, Modal, Select, Space, Typography } from "antd";
 import * as Yup from "yup";
 import { toast } from "react-toastify";
 import { useMutation } from "@tanstack/react-query";
 import InputCommon from "../../../../common/Input/InputCommon";
 import { adminContext } from "../../../../context/AdminContext";
-import { UpdateUserAdminService } from "../../../../services/AdminService";
+import {
+  CreateCustomerAdminService,
+  UpdateUserAdminService,
+} from "../../../../services/AdminService";
+
+const STRONG_PASSWORD_REGEX =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+const PASSWORD_RULE_MESSAGE =
+  "Min 8 chars, upper, lower, number, and special character.";
 
 function buildInitialValues(customer) {
-  if (!customer) return { fullName: "", phone: "", locked: false };
+  if (!customer) {
+    return {
+      email: "",
+      fullName: "",
+      phone: "",
+      password: "",
+      locked: false,
+    };
+  }
   return {
+    email: customer.email || "",
     fullName: customer.fullName || customer.name || "",
     phone: customer.phone || customer.phoneNumber || "",
     locked: !!customer.locked,
@@ -21,7 +38,14 @@ function buildInitialValues(customer) {
 const CustomerDrawer = ({ customer, isOpen, onClose, refetch }) => {
   const { tokenAdmin } = useContext(adminContext);
   const initialValues = useMemo(() => buildInitialValues(customer), [customer]);
+  const isEdit = Boolean(customer?._id);
 
+  const [pwModalOpen, setPwModalOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+
+  const mutateCreate = useMutation({
+    mutationFn: (data) => CreateCustomerAdminService(data, tokenAdmin),
+  });
   const mutateUpdate = useMutation({
     mutationFn: (data) => UpdateUserAdminService(customer._id, data, tokenAdmin),
   });
@@ -29,39 +53,73 @@ const CustomerDrawer = ({ customer, isOpen, onClose, refetch }) => {
   const handleSubmit = useCallback(
     async (values) => {
       try {
-        const res = await mutateUpdate.mutateAsync({
-          fullName: values.fullName.trim(),
-          phone: values.phone.trim(),
-          locked: values.locked,
-        });
-        if (!res?.success) throw new Error(res?.message || "Failed");
-        toast.success(res.message || "Customer updated.");
+        if (isEdit) {
+          const res = await mutateUpdate.mutateAsync({
+            fullName: values.fullName.trim(),
+            phone: values.phone.trim(),
+            locked: values.locked,
+          });
+          if (!res?.success) throw new Error(res?.message || "Failed");
+          toast.success(res.message || "Customer updated.");
+        } else {
+          const res = await mutateCreate.mutateAsync({
+            email: values.email.trim(),
+            fullName: values.fullName.trim(),
+            phone: values.phone.trim(),
+            password: values.password?.trim() || "",
+            locked: values.locked,
+          });
+          if (!res?.success) throw new Error(res?.message || "Failed");
+          toast.success(res.message || "Customer created.");
+        }
         refetch?.();
         onClose?.();
       } catch (e) {
         toast.error(e.message);
       }
     },
-    [mutateUpdate, onClose, refetch]
+    [isEdit, mutateCreate, mutateUpdate, onClose, refetch]
   );
+
+  const handleChangePassword = useCallback(async () => {
+    const pw = newPassword.trim();
+    if (!STRONG_PASSWORD_REGEX.test(pw)) {
+      toast.error(PASSWORD_RULE_MESSAGE);
+      return;
+    }
+    try {
+      const res = await mutateUpdate.mutateAsync({ password: pw });
+      if (!res?.success) throw new Error(res?.message);
+      toast.success(res.message || "Password updated.");
+      setPwModalOpen(false);
+      setNewPassword("");
+    } catch (e) {
+      toast.error(e.message);
+    }
+  }, [mutateUpdate, newPassword]);
 
   const confirmSave = useCallback(
     (values, dirty) => {
       if (!dirty) return;
       Modal.confirm({
-        title: "Save changes?",
-        content: "Are you sure you want to save these changes?",
+        title: isEdit ? "Save changes?" : "Create customer account?",
+        content: isEdit
+          ? "Are you sure you want to save these changes?"
+          : "Create this customer account?",
         okText: "Save",
         cancelText: "Cancel",
         onOk: () => handleSubmit(values),
       });
     },
-    [handleSubmit]
+    [isEdit, handleSubmit]
   );
 
   const confirmCancel = useCallback(
     (dirty) => {
-      if (!dirty) { onClose?.(); return; }
+      if (!dirty) {
+        onClose?.();
+        return;
+      }
       Modal.confirm({
         title: "Discard changes?",
         content: "You have unsaved changes. Leave without saving?",
@@ -74,16 +132,33 @@ const CustomerDrawer = ({ customer, isOpen, onClose, refetch }) => {
     [onClose]
   );
 
+  const validationSchema = useMemo(
+    () =>
+      Yup.object({
+        fullName: Yup.string().trim(),
+        phone: Yup.string().trim(),
+        locked: Yup.boolean(),
+        ...(isEdit
+          ? {}
+          : {
+              email: Yup.string()
+                .required("Email is required")
+                .email("Invalid email")
+                .trim(),
+              password: Yup.string()
+                .required("Password is required")
+                .matches(STRONG_PASSWORD_REGEX, PASSWORD_RULE_MESSAGE),
+            }),
+      }),
+    [isEdit]
+  );
+
   return (
     <Fragment>
       <Formik
         initialValues={initialValues}
         enableReinitialize
-        validationSchema={Yup.object({
-          fullName: Yup.string().trim(),
-          phone: Yup.string().trim(),
-          locked: Yup.boolean(),
-        })}
+        validationSchema={validationSchema}
         validateOnBlur={false}
         validateOnChange={false}
         validateOnMount={false}
@@ -91,7 +166,7 @@ const CustomerDrawer = ({ customer, isOpen, onClose, refetch }) => {
         {(helperFormik) => (
           <Form>
             <Drawer
-              title="Edit customer"
+              title={isEdit ? "Edit customer" : "New customer"}
               placement="right"
               width={400}
               onClose={() => confirmCancel(helperFormik.dirty)}
@@ -107,25 +182,35 @@ const CustomerDrawer = ({ customer, isOpen, onClose, refetch }) => {
                   <Button
                     type="primary"
                     size="small"
-                    onClick={() => confirmSave(helperFormik.values, helperFormik.dirty)}
+                    onClick={() =>
+                      confirmSave(helperFormik.values, helperFormik.dirty)
+                    }
                     disabled={!helperFormik.dirty}
-                    loading={mutateUpdate.isLoading}
+                    loading={mutateCreate.isLoading || mutateUpdate.isLoading}
                   >
                     Save
                   </Button>
                 </Space>
               }
             >
-              <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-                Email cannot be changed. To delete this account, use the delete button on the table.
-              </Typography.Paragraph>
               <Flex vertical gap="middle">
-                <div>
-                  <div style={{ marginBottom: 6, fontWeight: 500 }}>Email</div>
-                  <Typography.Text style={{ display: "block", padding: "4px 0", color: "#888" }}>
-                    {customer?.email || "—"}
-                  </Typography.Text>
-                </div>
+                {isEdit ? (
+                  <div>
+                    <div style={{ marginBottom: 6, fontWeight: 500 }}>Email</div>
+                    <Typography.Text
+                      style={{ display: "block", padding: "4px 0", color: "#888" }}
+                    >
+                      {customer?.email || "—"}
+                    </Typography.Text>
+                  </div>
+                ) : (
+                  <FastField
+                    component={InputCommon}
+                    title="Email"
+                    name="email"
+                    placeholder="email@example.com"
+                  />
+                )}
                 <FastField
                   component={InputCommon}
                   title="Full name"
@@ -152,8 +237,46 @@ const CustomerDrawer = ({ customer, isOpen, onClose, refetch }) => {
                     ]}
                   />
                 </div>
+                {isEdit ? (
+                  <div>
+                    <div style={{ marginBottom: 6, fontWeight: 500 }}>Password</div>
+                    <Button onClick={() => setPwModalOpen(true)}>Change Password</Button>
+                  </div>
+                ) : (
+                  <FastField
+                    component={InputCommon}
+                    title="Password"
+                    name="password"
+                    placeholder="Password"
+                    type="password"
+                  />
+                )}
               </Flex>
             </Drawer>
+
+            <Modal
+              title="New password"
+              open={pwModalOpen}
+              onCancel={() => {
+                setPwModalOpen(false);
+                setNewPassword("");
+              }}
+              onOk={handleChangePassword}
+              okText="Save password"
+              cancelText="Cancel"
+              confirmLoading={mutateUpdate.isLoading}
+              destroyOnClose
+            >
+              <Flex vertical gap={12} style={{ marginTop: 8 }}>
+                <Typography.Text type="secondary">{PASSWORD_RULE_MESSAGE}</Typography.Text>
+                <Input.Password
+                  placeholder="New password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  onPressEnter={handleChangePassword}
+                />
+              </Flex>
+            </Modal>
           </Form>
         )}
       </Formik>

@@ -204,9 +204,6 @@ const StaffDrawer = ({ staff, isOpen, onClose, refetch }) => {
                 </Space>
               }
             >
-              <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-                Managers can manage staff accounts and permissions.
-              </Typography.Paragraph>
               <Flex vertical gap="middle">
                 <FastField
                   component={InputCommon}

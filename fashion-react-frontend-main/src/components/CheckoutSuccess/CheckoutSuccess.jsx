@@ -27,19 +27,13 @@ const CheckoutSuccess = () => {
           </span>
         </div>
         <div className="wrap-checkout-success_content-btn">
-          {orderId ? (
-            <Button
-              type="primary"
-              onClick={() => {
-                navigate(`/order/${orderId}/review`, { replace: true });
-              }}
-            >
-              RATE YOUR ORDER
-            </Button>
-          ) : null}
           <Button
+            type="primary"
             onClick={() => {
-              navigate("/user/order", { replace: true });
+              navigate(
+                orderId ? `/user/order/${orderId}` : "/user/order",
+                { replace: true }
+              );
             }}
           >
             VIEW ORDER

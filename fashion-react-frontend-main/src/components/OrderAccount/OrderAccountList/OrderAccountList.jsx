@@ -5,7 +5,20 @@ import { Fragment } from "react";
 import { useNavigate } from "react-router-dom";
 import { enumStatus } from "../../../constants";
 import { formatCurrency } from "../../../utils";
-import { format } from "timeago.js";
+
+const formatOrderDate = (iso) => {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleString("en-GB", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return "—";
+  }
+};
 
 const OrderAccountList = (props) => {
   const navigate = useNavigate();
@@ -16,12 +29,8 @@ const OrderAccountList = (props) => {
     {
       title: "Created date",
       dataIndex: "createdAt",
-      render: (_) => format(_),
-    },
-    {
-      title: "Updated date",
-      dataIndex: "updatedAt",
-      render: (_) => format(_),
+      width: 180,
+      render: (_) => formatOrderDate(_),
     },
     {
       title: "Email",

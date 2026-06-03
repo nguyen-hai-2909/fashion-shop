@@ -21,6 +21,14 @@ const deleteLabels = {
     title: "Delete staff accounts",
     body: "Delete the selected staff accounts? This cannot be undone.",
   },
+  customer: {
+    title: "Delete customer accounts",
+    body: "Delete the selected customer accounts? This cannot be undone.",
+  },
+  review: {
+    title: "Delete reviews",
+    body: "Remove ratings and comments for the selected reviews?",
+  },
   default: {
     title: "Confirm delete",
     body: "Delete the selected items?",

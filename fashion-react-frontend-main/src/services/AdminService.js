@@ -18,6 +18,12 @@ export const GetAdminProductDetailService = async (id, token) => {
   });
 };
 
+export const CreateCustomerAdminService = async (data, token) => {
+  return await axios.post(`${ApiEndpoint.ADMIN_ENDPOINT}/user`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
 export const GetUserAdminService = async (query, token) => {
   return await axios.get(`${ApiEndpoint.ADMIN_ENDPOINT}/user`, {
     headers: { Authorization: `Bearer ${token}` },

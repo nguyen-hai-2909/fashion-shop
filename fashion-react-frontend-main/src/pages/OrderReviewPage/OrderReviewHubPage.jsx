@@ -3,7 +3,7 @@ import { Fragment, useContext } from "react";
 import { Link, useParams } from "react-router-dom";
 import { authContext } from "../../context/AuthContext";
 import { GetOrderReviewItemsService } from "../../services/ReviewService";
-import { cartImageUrl } from "../../utils";
+import { cartImageUrl, formatVariantTitle } from "../../utils";
 import "./OrderReviewPage.scss";
 
 const OrderReviewHubPage = () => {
@@ -40,7 +40,7 @@ const OrderReviewHubPage = () => {
       <p style={{ color: "#666", marginBottom: 24 }}>
         {hub?.canReview
           ? "Choose a product below to leave a star rating and comment."
-          : `Order status: ${hub?.status || "unknown"}. Reviews open after the order is placed.`}
+          : `Order status: ${hub?.status || "unknown"}. You can rate products after the order is delivered.`}
       </p>
 
       {isLoading && <p>Loading...</p>}
@@ -73,7 +73,7 @@ const OrderReviewHubPage = () => {
                   <strong>{it.productName}</strong>
                   {it.variantTitle ? (
                     <div style={{ color: "#888", fontSize: 13 }}>
-                      {it.variantTitle}
+                      {formatVariantTitle(it.variantTitle)}
                     </div>
                   ) : null}
                   {it.hasReview ? (
@@ -92,7 +92,7 @@ const OrderReviewHubPage = () => {
                   {it.hasReview ? "Edit review" : "Rate"}
                 </Link>
               ) : (
-                <span style={{ color: "#999", fontSize: 13 }}>Pending</span>
+                <span style={{ color: "#999", fontSize: 13 }}>Not delivered yet</span>
               )}
             </div>
           ))}
