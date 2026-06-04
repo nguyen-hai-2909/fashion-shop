@@ -2,7 +2,11 @@
 import { Fragment } from "react";
 import Loading from "../Loader/Loading";
 import { Link } from "react-router-dom";
-import { formatCurrency, productImageUrl } from "../../utils";
+import { productImageUrl } from "../../utils";
+import ProductPriceDisplay, {
+  ProductDiscountBadge,
+} from "../ProductPrice/ProductPriceDisplay";
+import { truncateText } from "../../utils/productPricing";
 
 const ViewProductsPage = (props) => {
   //! Props
@@ -30,12 +34,12 @@ const ViewProductsPage = (props) => {
               }`}
             >
               {(dataProducts || [])?.map((product) => {
-                const { slug, name, price, images, description } = product;
+                const { slug, name, images } = product;
                 const productPath = slug ? `/products/${slug}` : "/products";
-                const text = (description || "").slice(0, 150);
                 return (
                   <article key={slug || name} className="featured">
                     <div className="container">
+                      <ProductDiscountBadge product={product} />
                       <Link
                         to={productPath}
                         aria-label={`View details for ${name}`}
@@ -49,16 +53,22 @@ const ViewProductsPage = (props) => {
                         className="footer-featured"
                         style={{ textTransform: "unset" }}
                       >
-                        <h5>{name}</h5>
-                        <p style={{ textTransform: "unset" }}>{formatCurrency(price)}</p>
+                        <h5 title={name}>{truncateText(name, 36)}</h5>
+                        <ProductPriceDisplay
+                          product={product}
+                          className="product-price-block--grid"
+                        />
                       </div>
                     )}
 
                     {!isTypeRender && (
                       <div>
-                        <h4>{name}</h4>
-                        <h5 style={{ textTransform: "unset" }}>{formatCurrency(price)}</h5>
-                        <p>{text}...</p>
+                        <h4 title={name}>{truncateText(name, 45)}</h4>
+                        <ProductPriceDisplay
+                          product={product}
+                          layout="inline"
+                          className="product-price-block--list"
+                        />
                         <Link to={productPath} className="btn">
                           details
                         </Link>

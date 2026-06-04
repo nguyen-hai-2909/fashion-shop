@@ -10,10 +10,10 @@ import { cartContext } from "../../context/CartContext";
 import {
   cartImageUrl,
   displayColorLabel,
-  formatCurrency,
   formatVariantTitle,
   productImageUrl,
 } from "../../utils";
+import ProductPriceDisplay from "../../components/ProductPrice/ProductPriceDisplay";
 import { uploadImage } from "../../services/UploadService";
 import { buildCartLineItem } from "../../utils/buildCartLineItem";
 import { showToast } from "../../utils/showToast";
@@ -342,7 +342,11 @@ const ProductDetailPage = () => {
               </section>
               <section className="content">
                 <h2>{detailProduct?.name}</h2>
-                <h5>{formatCurrency(stockCurrent?.price ?? detailProduct?.price)}</h5>
+                <ProductPriceDisplay
+                  layout="detail"
+                  variant={stockCurrent}
+                  product={detailProduct}
+                />
                 {detailProduct?.description ? (
                   <p className="description">{detailProduct.description}</p>
                 ) : null}

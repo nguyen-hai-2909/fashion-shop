@@ -3,7 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { GetAllProductsService } from "../../services/ProductService";
 import { useEffect, useState } from "react";
 import Loading from "../Loader/Loading";
-import { formatCurrency, productImageUrl } from "../../utils";
+import { productImageUrl } from "../../utils";
+import ProductPriceDisplay, {
+  ProductDiscountBadge,
+} from "../ProductPrice/ProductPriceDisplay";
 
 const ProductDemo = () => {
   //! Props
@@ -38,7 +41,7 @@ const ProductDemo = () => {
       <div className="section-center featured-wrap">
         {(isLoading || isFetching) && <Loading />}
         {(productsData || [])?.slice(0, 6).map((product) => {
-          const { _id, slug, name, price, images, variants } = product;
+          const { _id, slug, name, images, variants } = product;
           const productPath = slug ? `/products/${slug}` : "/products";
           const soldOut =
             !Array.isArray(variants) ||
@@ -51,6 +54,7 @@ const ProductDemo = () => {
           return (
             <article key={_id} className="featured-shop-card">
               <div className="featured-shop-img">
+                <ProductDiscountBadge product={product} />
                 {soldOut && <span className="featured-shop-badge">Sold out</span>}
                 <Link to={productPath} aria-label={`View details for ${name}`}>
                   <img className="first-image" src={firstImage} alt={name} />
@@ -61,7 +65,7 @@ const ProductDemo = () => {
               </div>
               <div className="featured-shop-detail">
                 <h5 title={name}>{name}</h5>
-                <p>{formatCurrency(price)}</p>
+                <ProductPriceDisplay product={product} />
               </div>
             </article>
           );

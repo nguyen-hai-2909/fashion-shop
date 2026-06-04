@@ -131,6 +131,11 @@ const ProductForm = () => {
           const matchColor = colorsList.find((c) => c.value === row.color);
           const colorLabel = matchColor?.label || row.color;
           const variantId = row.id || row._id;
+          const variantPrice = Number(row.price || values.price || 0);
+          const productCompare =
+            values.compareAtPrice != null && values.compareAtPrice !== ""
+              ? Number(values.compareAtPrice)
+              : null;
           return {
             ...(variantId ? { _id: variantId } : {}),
             sku:
@@ -144,8 +149,11 @@ const ProductForm = () => {
               label: colorLabel,
             },
             size: row.size,
-            price: Number(row.price || values.price || 0),
-            compareAtPrice: null,
+            price: variantPrice,
+            compareAtPrice:
+              productCompare != null && variantPrice <= productCompare
+                ? productCompare
+                : null,
             inventory: Number(row.amount || 0),
             imageUrl: row.imageUrl || "",
             isActive: row.isActive !== false,
@@ -200,7 +208,13 @@ const ProductForm = () => {
     const defaultSize = values.category === "giay-tui" ? "38" : "M";
     setFieldValue("variants", [
       ...(values.variants || []),
-      { color: "", size: defaultSize, amount: 0, price: values.price || 0, imageUrl: "" },
+      {
+        color: "",
+        size: defaultSize,
+        amount: 0,
+        price: values.price || 0,
+        imageUrl: "",
+      },
     ]);
   }, []);
 
@@ -305,6 +319,18 @@ const ProductForm = () => {
             data?.category ?? categorySelectOptions?.[0]?.value ?? categoryList[0].value,
           status: data?.status ?? "active",
           price: data?.price ?? 0,
+          compareAtPrice:
+            data?.compareAtPrice != null
+              ? Number(data.compareAtPrice)
+              : data?.variants?.find((v) => v?.compareAtPrice != null)?.compareAtPrice != null
+                ? Number(
+                    data.variants.find((v) => v?.compareAtPrice != null).compareAtPrice
+                  )
+                : data?.stock?.find((v) => v?.compareAtPrice != null)?.compareAtPrice != null
+                  ? Number(
+                      data.stock.find((v) => v?.compareAtPrice != null).compareAtPrice
+                    )
+                  : "",
           description: data?.description ?? "",
           variants:
             data?.variants?.map((v) => ({
@@ -342,6 +368,19 @@ const ProductForm = () => {
             )
             .required("Status is required"),
           price: Yup.number().required("Price is required"),
+          compareAtPrice: Yup.number()
+            .min(0, "Must be 0 or more")
+            .nullable()
+            .transform((v, orig) => (orig === "" || orig == null ? null : v))
+            .test(
+              "gte-price",
+              "Compare price must be >= base price",
+              function (value) {
+                if (value == null || value === "") return true;
+                const sell = Number(this.parent.price);
+                return !Number.isFinite(sell) || Number(value) >= sell;
+              }
+            ),
           description: Yup.string().required("Description is required"),
           variants: Yup.array()
             .of(
@@ -515,14 +554,28 @@ const ProductForm = () => {
                           style={{ width: "100%" }}
                         />
                         <div style={{ marginTop: "1rem" }}>
-                          <FastField
-                            component={InputCommon}
-                            name="price"
-                            title="Base price"
-                            placeholder="VND"
-                            type="number"
-                            prefix={"₫"}
-                          />
+                          <Row gutter={8}>
+                            <Col span={12}>
+                              <FastField
+                                component={InputCommon}
+                                name="price"
+                                title="Base price"
+                                placeholder="VND"
+                                type="number"
+                                prefix={"₫"}
+                              />
+                            </Col>
+                            <Col span={12}>
+                              <FastField
+                                component={InputCommon}
+                                name="compareAtPrice"
+                                title="Compare price"
+                                placeholder="Original price"
+                                type="number"
+                                prefix={"₫"}
+                              />
+                            </Col>
+                          </Row>
                         </div>
                       </Col>
                       <Col span={16}>
@@ -652,7 +705,7 @@ const ProductForm = () => {
                                   <FastField
                                     component={InputCommon}
                                     name={`variants[${index}].price`}
-                                    placeholder="Variant price"
+                                    placeholder="Selling price"
                                     type="number"
                                   />
                                 </Col>

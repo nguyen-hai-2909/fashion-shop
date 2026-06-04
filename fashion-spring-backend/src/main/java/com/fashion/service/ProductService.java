@@ -77,7 +77,9 @@ public class ProductService {
             v.setColor(c);
             v.setSize("M");
             v.setPrice(parseDouble(row.get("price"), basePrice));
-            v.setCompareAtPrice(null);
+            Object cap = row.get("compareAtPrice");
+            if (cap == null) cap = row.get("compare_at_price");
+            v.setCompareAtPrice(cap != null ? parseDouble(cap, 0) : null);
             v.setInventory(parseInt(row.get("amount"), 0));
             v.setSku((slug + "-" + colorName + "-M").replaceAll("\\s+", "-").toUpperCase(Locale.ROOT) + "-" + (i++));
             v.setIsActive(true);
@@ -209,9 +211,45 @@ public class ProductService {
     }
 
     private double minVariantPrice(Product p) {
-        return p.getVariants() == null ? 0 : p.getVariants().stream()
-                .mapToDouble(v -> v.getPrice() != null ? v.getPrice() : 0)
-                .min().orElse(0);
+        return listPricing(p).get("price");
+    }
+
+    /** Lowest-variant selling price and its compare-at price for catalog cards. */
+    private Map<String, Double> listPricing(Product p) {
+        Map<String, Double> out = new LinkedHashMap<>();
+        out.put("price", 0.0);
+        out.put("compareAtPrice", null);
+        if (p.getVariants() == null || p.getVariants().isEmpty()) {
+            return out;
+        }
+        Product.ProductVariant best = null;
+        double min = Double.MAX_VALUE;
+        for (Product.ProductVariant v : p.getVariants()) {
+            if (Boolean.FALSE.equals(v.getIsActive())) continue;
+            double price = v.getPrice() != null ? v.getPrice() : 0;
+            if (price > 0 && price < min) {
+                min = price;
+                best = v;
+            }
+        }
+        if (best == null) {
+            return out;
+        }
+        out.put("price", min);
+        Double compare = resolveVariantCompareAtPrice(best);
+        if (compare != null && compare > min) {
+            out.put("compareAtPrice", compare);
+        }
+        return out;
+    }
+
+    /** Compare applies only when variant selling price is not above compare-at. */
+    private static Double resolveVariantCompareAtPrice(Product.ProductVariant v) {
+        if (v == null || v.getCompareAtPrice() == null) return null;
+        double price = v.getPrice() != null ? v.getPrice() : 0;
+        double compare = v.getCompareAtPrice();
+        if (price > compare) return null;
+        return compare;
     }
 
     /** Public product page / API: only active products; accepts Mongo id or slug. */
@@ -353,7 +391,11 @@ public class ProductService {
         m.put("images", clientImages(p));
         m.put("stock", clientStock(p));
         m.put("variants", p.getVariants());
-        m.put("price", minVariantPrice(p));
+        Map<String, Double> pricing = listPricing(p);
+        m.put("price", pricing.get("price"));
+        if (pricing.get("compareAtPrice") != null) {
+            m.put("compareAtPrice", pricing.get("compareAtPrice"));
+        }
         m.put("createdAt", p.getCreatedAt());
         m.put("updatedAt", p.getUpdatedAt());
         return m;
@@ -384,6 +426,10 @@ public class ProductService {
             row.put("hex", v.getColor() != null && v.getColor().getHex() != null ? v.getColor().getHex() : "#cccccc");
             row.put("amount", v.getInventory());
             row.put("price", v.getPrice());
+            Double variantCompare = resolveVariantCompareAtPrice(v);
+            if (variantCompare != null) {
+                row.put("compareAtPrice", variantCompare);
+            }
             row.put("size", v.getSize());
             row.put("sku", v.getSku());
             row.put("imageUrl", v.getImageUrl());
